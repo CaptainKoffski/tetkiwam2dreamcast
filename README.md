@@ -59,6 +59,5 @@ Reference SHA1s of a verified build:
 | check | result |
 |---|---|
 | Flycast, real BIOS → title + attract | ✅ 2026-10-03 |
-| Gameplay (coin, start, play) in Flycast | ✅ user, 2026-10-03 |
-| Real DC hardware (GDEMU) | ⬜ not yet |
+| Real DC hardware (GDEMU) | ✅ works — user report, 2026-10-03 |
 | CDI (burned disc) | ⬜ not built |
