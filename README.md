@@ -54,6 +54,26 @@ Reference SHA1s of a verified build:
   macOS `._*` files break GDEMU.
 - The disc is region `J` only, so a US/EU console needs a region-free BIOS or ODE.
 
+## Prior art & credits
+
+- **The Cutting Room Floor** found the leftover Dreamcast build and published the
+  decrypt key and the trim/GDI recipe:
+  [Tetris Kiwamemichi (Arcade)](https://tcrf.net/Tetris_Kiwamemichi_(Arcade)) and
+  [Notes page](https://tcrf.net/Notes:Tetris_Kiwamemichi_(Arcade)). Their GDI was
+  reported to run in Flycast and DEmul, with no real-hardware result. This repo
+  adds the track-4 `1ST_READ.BIN` relocation, which the real BIOS needs, and a
+  scripted build.
+- **Flycast** (flyinghead) and **MAME** (`naomigd.cpp`, Olivier Galibert) are the
+  source of the GD-ROM file lookup and Naomi DES code in `tools/`.
+- **megavolt85's Atomiswave→DC ports** (Dolphin Blue, Sushi Bar) showed the
+  boot-file-in-the-last-data-track layout, documented in the cfp2dreamcast port.
+
+## License
+
+GPL-2.0 (see `LICENSE`), because `tools/` is derived from Flycast (GPL-2.0),
+which took that code from MAME (BSD-3-Clause). No game data is included or
+distributed. Tetris Kiwamemichi belongs to its rights holders.
+
 ## Status
 
 | check | result |
