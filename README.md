@@ -66,8 +66,8 @@ Reference SHA1s of a verified build:
 - **The Cutting Room Floor** found the leftover Dreamcast build and published the
   decrypt key and the trim/GDI recipe:
   [Tetris Kiwamemichi (Arcade)](https://tcrf.net/Tetris_Kiwamemichi_(Arcade)) and
-  [Notes page](https://tcrf.net/Notes:Tetris_Kiwamemichi_(Arcade)). Their GDI was
-  reported to run in Flycast and DEmul, with no real-hardware result. This repo
+  [Notes page](https://tcrf.net/Notes:Tetris_Kiwamemichi_(Arcade)). Their Notes page
+  ends: "This GDI should run in Flycast and DEmul, however I have not yet heard test results on real hardware." (checked 2026-10-03). This repo
   adds the track-4 `1ST_READ.BIN` relocation, which the real BIOS needs, and a
   scripted build.
 - **Flycast** (flyinghead) and **MAME** (`naomigd.cpp`, Olivier Galibert) are the
