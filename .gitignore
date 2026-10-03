@@ -1,0 +1,18 @@
+# Copyrighted / disc-derived bytes — NEVER commit (ROMs, discs, BIOS, decrypted images)
+/build/
+/roms/
+*.chd
+*.gdi
+*.cdi
+*.iso
+*.bin
+*.raw
+*.pic
+*.zip
+*.7z
+*.dat
+
+# junk
+.DS_Store
+._*
+__pycache__/

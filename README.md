@@ -1,0 +1,64 @@
+# tetkiwam2dreamcast
+
+Tetris Kiwamemichi (Success, 2004, Naomi GD-ROM GDL-0020, MAME set `tetkiwam`) on a
+real Dreamcast. This repo has the build method only: no game data, ROMs, BIOS or
+disc images. Bring your own dump.
+
+## How it works
+
+The arcade disc's `TETRIS.BIN` is the Naomi DIMM image. You decrypt it with the
+DES key from the game's security PIC (`317-5093-jpn`, key `62790B91859854C7`).
+The first 0x500 bytes are a Naomi header. Everything after that is a complete
+Dreamcast GD track 3: a DC IP.BIN (Sega's 2002 SDK "sample disk" header, boot
+file `1ST_READ.BIN`, region `J`) plus an ISO9660 filesystem with absolute LBAs
+starting at 45000 ([TCRF Notes page](https://tcrf.net/Notes:Tetris_Kiwamemichi_(Arcade))).
+
+**Trimming alone doesn't boot on the real BIOS.** A 3-track GDI of the trimmed
+image falls through to the BIOS menu in Flycast with a real `dc_boot.bin`, before
+the license screen appears. Flycast's HLE BIOS (reios) boots it, so the game is
+fine. What fixes it is moving `1ST_READ.BIN` to the first sector of a last data
+track at LBA 450000, which is the same layout the Atomiswave→DC ports use
+(cleopatra `phase4-conversion.md` B4). A bisect in Flycast (2026-10-03) showed
+this is the only change needed. The original IP.BIN and the arcade disc's own
+tracks 1–2 work unchanged. The control disc was Dolphin Blue on the same
+Flycast + BIOS path.
+
+## Build
+
+Requires `chdman` (`brew install rom-tools`, v0.289 used), `clang++`, Python 3.
+
+```
+python3 build_gdi.py            # -> build/gdi/tetris.gdi + track01..04
+```
+
+It reads `tetkiwam.zip` (PIC) and `tetkiwam/gdl-0020.chd` from
+`../naomi2dreamcast/naomi`. Set `NAOMI_DIR=` to point it somewhere else.
+`tools/extract_dat.cpp` and `tools/des_block.c` handle the GD file location and
+the DES, both transcribed from Flycast `core/hw/naomi/gdcartridge.cpp`, plus an
+`EXTRACT_NAME` override that picks which disc file to decrypt.
+
+Reference SHA1s of a verified build:
+
+| file | sha1 |
+|---|---|
+| tetris.gdi | `1d6069f79206f488393963711ad6859a134c6b8f` |
+| track01.bin | `5cf394175d4caad3b37b8f4ec213cb7b81d9a71f` |
+| track02.raw | `6030e25dac2e9c0237aaf908b5037ee16503e0c0` |
+| track03.iso | `d73e09037ee2baac87c0a56242d1003d82f276e6` |
+| track04.iso | `5c18e14e53b922e6abc57e84e0bf741dd76f0d0d` |
+
+## Play
+
+- Coin-op is still active (not free-play): **Y inserts a coin**, Start starts.
+- GDEMU/ODE: copy `build/gdi/` to the SD card. Run `dot_clean` on it first, since
+  macOS `._*` files break GDEMU.
+- The disc is region `J` only, so a US/EU console needs a region-free BIOS or ODE.
+
+## Status
+
+| check | result |
+|---|---|
+| Flycast, real BIOS → title + attract | ✅ 2026-10-03 |
+| Gameplay (coin, start, play) in Flycast | ✅ user, 2026-10-03 |
+| Real DC hardware (GDEMU) | ⬜ not yet |
+| CDI (burned disc) | ⬜ not built |
