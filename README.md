@@ -39,6 +39,9 @@ Requires `chdman` (`brew install rom-tools`, v0.289 used), `clang++`, Python 3.
 python3 build_gdi.py            # -> build/gdi/tetris.gdi + track01..04
 ```
 
+Or `make` (same build), `make verify` (checks the reference SHA1s below),
+`make release` (local zip, never upload), `make deploy CARD=/Volumes/GDEMU/NN`.
+
 It reads `tetkiwam.zip` (PIC) and `tetkiwam/gdl-0020.chd` from
 `../naomi2dreamcast/naomi`. Set `NAOMI_DIR=` to point it somewhere else.
 `tools/extract_dat.cpp` and `tools/des_block.c` handle the GD file location and
