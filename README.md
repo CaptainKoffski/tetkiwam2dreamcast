@@ -44,6 +44,19 @@ It reads `tetkiwam.zip` (PIC) and `tetkiwam/gdl-0020.chd` from
 the DES, both transcribed from Flycast `core/hw/naomi/gdcartridge.cpp`, plus an
 `EXTRACT_NAME` override that picks which disc file to decrypt.
 
+Optional: drop `iplogo.mr` at the repo root (Sega MR format, 320×90, ≤ 8 KB) and
+the build writes it into IP.BIN's logo slot, so the SEGA licence ("TM") screen
+shows a logo instead of blank space. That slot is at IP.BIN offset 0x3820
+(makeip `src/mr.c` `MR_OFFSET`; mc.pp.se/dc/ip.bin.html lists 0x3800–0x5FFF as
+modifiable bootstrap). The shipped IP.BIN leaves it zeroed, and its licence code
+holds the slot pointer `0x8c00b820` at 0x083c, so the logo is drawn as-is. We use
+the same NAOMI GD-ROM SYSTEM logo as senkosp2dreamcast. It is Sega trademark art,
+so it is gitignored and not in this repo. Absent, track03 is byte-identical to
+the build before this option existed. Checked in Flycast with the real BIOS
+(2026-10-04): the licence screen shows the logo (dumped from the guest
+framebuffer, since the BIOS draws that screen in 32-bit 0888 and Flycast's own
+screenshot path only sees PVR-rendered frames). Real-hardware look still owed.
+
 Reference SHA1s of a verified build:
 
 | file | sha1 |
@@ -52,6 +65,7 @@ Reference SHA1s of a verified build:
 | track01.bin | `5cf394175d4caad3b37b8f4ec213cb7b81d9a71f` |
 | track02.raw | `6030e25dac2e9c0237aaf908b5037ee16503e0c0` |
 | track03.iso | `d73e09037ee2baac87c0a56242d1003d82f276e6` |
+| track03.iso with `iplogo.mr` | `736cbb18b0c39acc395a46b0692d8ae25dfa0e8f` |
 | track04.iso | `5c18e14e53b922e6abc57e84e0bf741dd76f0d0d` |
 
 ## Play
@@ -88,3 +102,4 @@ distributed. Tetris Kiwamemichi belongs to its rights holders.
 | Flycast, real BIOS → title + attract | ✅ 2026-10-03 |
 | Real DC hardware (GDEMU) | ✅ works — user report, 2026-10-03 |
 | CDI (burned disc) | ⬜ not built |
+| SEGA TM-screen logo (`iplogo.mr`) | ✅ Flycast + real BIOS 2026-10-04; ⬜ real hardware |

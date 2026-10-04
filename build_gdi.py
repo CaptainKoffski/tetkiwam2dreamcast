@@ -53,6 +53,19 @@ while iso[p]:
 else:
     sys.exit("1ST_READ.BIN not in root directory")
 
+# SEGA TM screen logo: IP.BIN's MR-image slot at 0x3820 (makeip src/mr.c MR_OFFSET;
+# mc.pp.se/dc/ip.bin.html: 0x3800-0x5FFF is modifiable bootstrap). The shipped
+# IP.BIN leaves the 8 KB slot zeroed and its license code holds the slot pointer
+# 0x8c00b820 at 0x083c, so a logo dropped in is drawn as-is. Optional, gitignored
+# (Sega trademark art); absent -> blank slot, build identical to before.
+MR = os.path.join(HERE, "iplogo.mr")
+if os.path.exists(MR):
+    mr = open(MR, "rb").read()
+    assert mr[:2] == b"MR" and struct.unpack_from("<I", mr, 2)[0] == len(mr) and len(mr) <= 8192, "bad iplogo.mr"
+    assert iso[0x3820:0x5820] == bytes(8192), "IP.BIN logo slot not empty"
+    iso[0x3820:0x3820 + len(mr)] = mr
+print("iplogo.mr: TM screen logo inserted" if os.path.exists(MR) else "note: no iplogo.mr -> blank TM screen")
+
 open(os.path.join(OUT, "track03.iso"), "wb").write(iso)
 open(os.path.join(OUT, "track04.iso"), "wb").write(boot.ljust(max(300, -(-size // 2048)) * 2048, b"\0"))
 os.replace(os.path.join(work, "disc01.bin"), os.path.join(OUT, "track01.bin"))

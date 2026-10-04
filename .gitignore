@@ -11,6 +11,8 @@
 *.zip
 *.7z
 *.dat
+# Sega TM-screen logo (trademark art) -- see README
+/iplogo.mr
 
 # junk
 .DS_Store
