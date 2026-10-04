@@ -55,7 +55,8 @@ so it is gitignored and not in this repo. Absent, track03 is byte-identical to
 the build before this option existed. Checked in Flycast with the real BIOS
 (2026-10-04): the licence screen shows the logo (dumped from the guest
 framebuffer, since the BIOS draws that screen in 32-bit 0888 and Flycast's own
-screenshot path only sees PVR-rendered frames). Real-hardware look still owed.
+screenshot path only sees PVR-rendered frames). Confirmed on real hardware
+(GDEMU, user report, 2026-10-04).
 
 Reference SHA1s of a verified build:
 
@@ -102,4 +103,4 @@ distributed. Tetris Kiwamemichi belongs to its rights holders.
 | Flycast, real BIOS → title + attract | ✅ 2026-10-03 |
 | Real DC hardware (GDEMU) | ✅ works — user report, 2026-10-03 |
 | CDI (burned disc) | ⬜ not built |
-| SEGA TM-screen logo (`iplogo.mr`) | ✅ Flycast + real BIOS 2026-10-04; ⬜ real hardware |
+| SEGA TM-screen logo (`iplogo.mr`) | ✅ Flycast + real BIOS; ✅ GDEMU — user report, 2026-10-04 |
