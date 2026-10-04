@@ -75,6 +75,15 @@ bytes gives the input pixels exactly, and the same detwiddle turns the donor's
 own art into a correct picture (twiddle-order control). Confirmed on real
 hardware (GDEMU, user report, 2026-10-04).
 
+Always on: the build replaces IP.BIN's game title (offset 0x80, 128 bytes,
+space-padded; Flycast `core/reios/reios.h` `ip_meta_t.software_name`, makeip
+`src/field.c` "Game Title") with `TETRIS KIWAMEMICHI`. The shipped title is
+Sega's "THIS IS A SAMPLE DISK FOR USE IN THE OFFICE ONLY / DO NOT SELL / DO NOT
+CARRY OUT FROM THE OFFICE", and that's what GDEMU menus and Flycast display. The header
+CRC at 0x20 covers only 0x40–0x4F (makeip `src/crc.c` `update_crc`), so nothing
+else needs fixing up. Compared with 0.2.0, track03 differs only in 0x80–0xFF.
+Confirmed on real hardware (GDEMU, user report, 2026-10-04).
+
 Reference SHA1s of a verified build:
 
 | file | sha1 |
@@ -82,10 +91,13 @@ Reference SHA1s of a verified build:
 | tetris.gdi | `1d6069f79206f488393963711ad6859a134c6b8f` |
 | track01.bin | `5cf394175d4caad3b37b8f4ec213cb7b81d9a71f` |
 | track02.raw | `6030e25dac2e9c0237aaf908b5037ee16503e0c0` |
-| track03.iso | `d73e09037ee2baac87c0a56242d1003d82f276e6` |
-| track03.iso with `iplogo.mr` | `736cbb18b0c39acc395a46b0692d8ae25dfa0e8f` |
-| track03.iso with `iplogo.mr` + `0GDTEX.PVR` (0.2.0) | `2157c4eeecd89c960eb8c22b167131cfd5833280` |
+| track03.iso | `82f8925aa94dd2ac266acf5cfae37dfb5ec71444` |
+| track03.iso with `iplogo.mr` | `58870f766fa136f5a8fb760dad3cfd23b1bc9bed` |
+| track03.iso with `iplogo.mr` + `0GDTEX.PVR` (0.3.0) | `05ab2d08d33d637e8f73f971d8387af6321fe274` |
 | track04.iso | `5c18e14e53b922e6abc57e84e0bf741dd76f0d0d` |
+
+Before the title patch (up to tag 0.2.0) the three track03 rows were
+`d73e0903…`, `736cbb18…` (0.1.0) and `2157c4ee…` (0.2.0).
 
 ## Play
 
@@ -123,3 +135,4 @@ distributed. Tetris Kiwamemichi belongs to its rights holders.
 | CDI (burned disc) | ⬜ not built |
 | SEGA TM-screen logo (`iplogo.mr`) | ✅ Flycast + real BIOS; ✅ GDEMU — user report, 2026-10-04 |
 | Disc art in BIOS / GDEMU menu (`0GDTEX.PVR`) | ✅ offline byte checks; ✅ GDEMU — user report, 2026-10-04 |
+| Game title in IP.BIN (`TETRIS KIWAMEMICHI`) | ✅ offline byte diff + Flycast real-BIOS boot; ✅ GDEMU — user report, 2026-10-04 |

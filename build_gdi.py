@@ -80,6 +80,12 @@ if os.path.exists(ART):
     iso[o + 24] = 1                               # PVRT pixel format: RGB565
 print("0GDTEX.PVR: disc art replaced" if os.path.exists(ART) else "note: no 0GDTEX.PVR -> donor disc art")
 
+# Game title: IP.BIN 0x80, 128 B space-padded (Flycast core/reios/reios.h ip_meta_t
+# software_name; makeip src/field.c "Game Title"). Shipped as Sega's "THIS IS A SAMPLE
+# DISK FOR USE IN THE OFFICE ONLY ..."; GDEMU menus and Flycast show this field. The
+# header CRC at 0x20 covers only 0x40-0x4F (makeip src/crc.c update_crc), so no fixup.
+iso[0x80:0x100] = b"TETRIS KIWAMEMICHI".ljust(128)
+
 # SEGA TM screen logo: IP.BIN's MR-image slot at 0x3820 (makeip src/mr.c MR_OFFSET;
 # mc.pp.se/dc/ip.bin.html: 0x3800-0x5FFF is modifiable bootstrap). The shipped
 # IP.BIN leaves the 8 KB slot zeroed and its license code holds the slot pointer

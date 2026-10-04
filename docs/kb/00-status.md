@@ -1,17 +1,30 @@
 # Project status
 
-**Updated:** 2026-10-04 — **Release 0.2.0 (tag, on `main`): the shipped
+**Updated:** 2026-10-04 — **Release 0.3.0 (tag, on `main`): the shipped
 Dreamcast build of Tetris Kiwamemichi boots on real hardware (GDEMU) with
-the NAOMI GD-ROM SYSTEM logo on the SEGA TM screen and the Tetris cover
-in the BIOS / GDEMU disc menu.** Scope is a
+the NAOMI GD-ROM SYSTEM logo on the SEGA TM screen, the Tetris cover
+in the BIOS / GDEMU disc menu, and its own name in the disc header.** Scope is a
 conversion, not a port (README): the arcade GD-ROM carries a finished DC
 build; we decrypt it, relocate `1ST_READ.BIN` to a last data track,
-(0.1.0) fill IP.BIN's empty logo slot and (0.2.0) swap the disc art. Honest limit: single-rig evidence —
+(0.1.0) fill IP.BIN's empty logo slot, (0.2.0) swap the disc art and
+(0.3.0) replace the sample-disk title. Honest limit: single-rig evidence —
 one console, one GDEMU, one user report per round.
 
 Layout mirrors senkosp2dreamcast: this file is the narrative index,
 `tooling.md` holds recipes/citations/checksums, one file per step holds
 the full record (`iplogo.md`, `gdtex.md`).
+
+**GAME TITLE CLOSED (2026-10-04, operator hardware verdict "works on
+GDEMU"); Release 0.3.0 PROMOTED, tag pushed.** IP.BIN's
+title field (0x80, 128 B) shipped as Sega's "THIS IS A SAMPLE DISK FOR USE
+IN THE OFFICE ONLY / DO NOT SELL / ...", which GDEMU menus show.
+`build_gdi.py` now always writes `TETRIS KIWAMEMICHI` there (Flycast
+`core/reios/reios.h` `ip_meta_t.software_name`; makeip `src/field.c`). The
+header CRC covers only 0x40–0x4F (makeip `src/crc.c`), so no fixup. Delta vs
+0.2.0 track03 = 78 bytes inside 0x81–0xDF; with both optional files track03
+sha1 = `05ab2d08…`. Flycast real BIOS → attract, unchanged. GDEMU: works
+(user report), one-round close. track03 `05ab2d08…` = **0.3.0 track03**;
+gdi + tracks 01/02/04 unchanged since the base build.
 
 **GDTEX CLOSED (2026-10-04, operator hardware verdict "Work perfectly on
 the HW"); Release 0.2.0 PROMOTED, tag pushed.** Tetris cover art in the BIOS / GDEMU disc menu.** Same move as
