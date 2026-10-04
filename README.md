@@ -2,7 +2,8 @@
 
 Tetris Kiwamemichi (Success, 2004, Naomi GD-ROM GDL-0020, MAME set `tetkiwam`) on a
 real Dreamcast. This repo has the build method only: no game data, ROMs, BIOS or
-disc images. Bring your own dump.
+disc images. Bring your own dump. Working notes live in `docs/kb/`;
+`docs/kb/00-status.md` is the narrative index.
 
 > **This is a conversion, not a port.** The arcade disc already ships a complete
 > Dreamcast build of the game: Success left a DC executable and filesystem inside
