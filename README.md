@@ -7,8 +7,8 @@ disc images. Bring your own dump. Working notes live in `docs/kb/`;
 
 > **This is a conversion, not a port.** The arcade disc already ships a complete
 > Dreamcast build of the game: Success left a DC executable and filesystem inside
-> the encrypted Naomi image. No game code is rewritten, patched or recompiled
-> here. The work is extracting that build and laying it out on a disc the real
+> the encrypted Naomi image. No game code is rewritten or recompiled here, and
+> the only code patch is one byte that switches on the game's own free-play mode. The work is extracting that build and laying it out on a disc the real
 > Dreamcast BIOS will boot. As far as we know, this is the first time it has
 > been confirmed booting on real hardware (GDEMU, 2026-10-03).
 
@@ -84,6 +84,23 @@ CRC at 0x20 covers only 0x40–0x4F (makeip `src/crc.c` `update_crc`), so nothin
 else needs fixing up. Compared with 0.2.0, track03 differs only in 0x80–0xFF.
 Confirmed on real hardware (GDEMU, user report, 2026-10-04).
 
+Always on: free play. The game's coin manager already has a free-play flag
+(object `+0x980`, copied every frame to `+0x904`). Its credit check (`0x8c087818`)
+and credit spend (`0x8c0877a0`) return "OK" straight away when the flag is set,
+and the attract overlay switches from INSERT COIN(S) / CREDIT(S) to the game's
+own PRESS START BUTTON / FREE PLAY art. The Naomi build would set that flag from
+coin setting #27, which is what Flycast's "Naomi Free Play" writes
+(`core/hw/naomi/naomi_flashrom.cpp`, EEPROM byte 9 = 26). This DC build has no
+EEPROM and its init stores 0. `build_gdi.py` changes that store in `1ST_READ.BIN`
+at `0x8c0845e2` from `mov.l r3,@(r0,r12)` (r3 = 0) to `mov.l r1,@(r0,r12)`
+(r1 = 1). That is one byte, `0x36` → `0x16` at file offset `0x745e2`, and the
+original byte is asserted first. track04 differs from 0.3.0 in that byte only.
+Checked in Flycast with the real BIOS (2026-10-04), with the stock build as the
+control: the patched attract shows FREE PLAY and Start goes from the title to
+play-style select with 0 credits. The stock build stays on INSERT COIN(S) /
+CREDIT(S) 0 under the same scripted Start presses. Confirmed on real hardware
+(GDEMU, user report, 2026-10-04).
+
 Reference SHA1s of a verified build:
 
 | file | sha1 |
@@ -94,14 +111,15 @@ Reference SHA1s of a verified build:
 | track03.iso | `82f8925aa94dd2ac266acf5cfae37dfb5ec71444` |
 | track03.iso with `iplogo.mr` | `58870f766fa136f5a8fb760dad3cfd23b1bc9bed` |
 | track03.iso with `iplogo.mr` + `0GDTEX.PVR` (0.3.0) | `05ab2d08d33d637e8f73f971d8387af6321fe274` |
-| track04.iso | `5c18e14e53b922e6abc57e84e0bf741dd76f0d0d` |
+| track04.iso (free play, 0.4.0) | `2718605b6947bad281ea81283212cccb1f29d534` |
+| track04.iso before free play (≤ 0.3.0) | `5c18e14e53b922e6abc57e84e0bf741dd76f0d0d` |
 
 Before the title patch (up to tag 0.2.0) the three track03 rows were
 `d73e0903…`, `736cbb18…` (0.1.0) and `2157c4ee…` (0.2.0).
 
 ## Play
 
-- Coin-op is still active (not free-play): **Y inserts a coin**, Start starts.
+- Free play: no coins needed, Start starts. (Before free play, Y inserted a coin.)
 - GDEMU/ODE: copy `build/gdi/` to the SD card. Run `dot_clean` on it first, since
   macOS `._*` files break GDEMU.
 - The disc is region `J` only, so a US/EU console needs a region-free BIOS or ODE.
@@ -136,3 +154,4 @@ distributed. Tetris Kiwamemichi belongs to its rights holders.
 | SEGA TM-screen logo (`iplogo.mr`) | ✅ Flycast + real BIOS; ✅ GDEMU — user report, 2026-10-04 |
 | Disc art in BIOS / GDEMU menu (`0GDTEX.PVR`) | ✅ offline byte checks; ✅ GDEMU — user report, 2026-10-04 |
 | Game title in IP.BIN (`TETRIS KIWAMEMICHI`) | ✅ offline byte diff + Flycast real-BIOS boot; ✅ GDEMU — user report, 2026-10-04 |
+| Free play (1-byte `1ST_READ.BIN` patch) | ✅ Flycast + real BIOS, stock-build control; ✅ GDEMU — user report, 2026-10-04 |

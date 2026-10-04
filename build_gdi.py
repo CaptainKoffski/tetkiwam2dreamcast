@@ -53,6 +53,17 @@ while iso[p]:
 else:
     sys.exit("1ST_READ.BIN not in root directory")
 
+# Free play: the coin object's init (0x8c0845e2) stores 0 to its free-play word
+# (+0x980, copied every frame to +0x904). The credit check (0x8c087818) and credit
+# spend (0x8c0877a0) test that word first and succeed when it is set, and the
+# attract/credit display takes its "can start" branch. The Naomi build would fill it
+# from coin setting #27 (Flycast core/hw/naomi/naomi_flashrom.cpp ForceFreePlay);
+# this DC build never does. Store r1 (=1 there) instead of r3 (=0):
+# mov.l r3,@(r0,r12) 0x0c36 -> mov.l r1,@(r0,r12) 0x0c16. 1ST_READ loads at 0x8c010000.
+FREEPLAY = 0x8c0845e2 - 0x8c010000
+assert boot[FREEPLAY:FREEPLAY + 2] == b"\x36\x0c", "unexpected 1ST_READ.BIN at the free-play site"
+boot = boot[:FREEPLAY] + b"\x16" + boot[FREEPLAY + 1:]
+
 # Disc art: the DC BIOS disc menu and GDEMU's menu draw the root-dir 0GDTEX.PVR
 # (shipped here as Sega's leftover "Pokekano" CD picture: GBIX+PVRT header,
 # ARGB1555 square-twiddled 256x256). Optional 0GDTEX.PVR at repo root -- bare

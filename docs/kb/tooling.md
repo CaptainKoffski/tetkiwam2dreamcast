@@ -39,8 +39,9 @@ to override). ~15 s on an M1. Reference sha1s in the README.
     Flags **before** the disc path (after it: "Rest of command line
     ignored"). `pvr.rend=0` is mandatory: `emu.cfg` has `pvr.rend = 4`
     (Vulkan) and the fork segfaults in `VulkanRenderer::Init` ("Failed to
-    load Vulkan Portability library"). `pkill -9 -f
-    "flycast4naomi2dreamcast.*Flycast"` between runs.
+    load Vulkan Portability library"). Stop by PID (`& pid=$!` …
+    `kill $pid`), never `pkill -f`/`-x`: other projects run the same fork
+    concurrently (2026-10-04).
   - `$FLYCAST_SHOT` = last PVR-rendered frame; FB-only screens (BIOS
     license) come out as the background colour.
   - `$FLYCAST_SHOT_RAWFB` + `kill -USR2 <pid>` = guest scanout framebuffer
@@ -87,3 +88,20 @@ to override). ~15 s on an M1. Reference sha1s in the README.
 - **0.2.0 checksums (sha1):** track03 with `iplogo.mr` + `0GDTEX.PVR`
   **`2157c4eeecd89c960eb8c22b167131cfd5833280`** (GDEMU-verified
   2026-10-04); gdi/track01/02/04 unchanged from 0.1.0.
+
+## Free play tooling (2026-10-04)
+
+- **Disassembly:** extract `1ST_READ.BIN` (first 1007472 B of track04.iso),
+  then `/opt/toolchains/dc/sh-elf/bin/sh-elf-objdump -D -b binary -m sh4 -EL
+  --adjust-vma=0x8c010000`. Literal-pool loads annotate the value
+  (`! 904`), so `grep '! 904$'` finds every field access.
+- **Scripted Start press (fork `core/ui/gui.cpp`, `gui_dumpFramebuffer`, added
+  2026-10-04, uncommitted in the fork):** `FLYCAST_START_AT=<frame>[,<frame>...]`
+  holds controller-1 Start (`kcode[0]` bit `DC_BTN_START`) for frames
+  [N, N+10). Each press logs `START_AT: Start down @N`. The maple poll reads
+  global `kcode[]` (`core/network/ggpo.cpp` `getLocalInput`). Frame 1800 ≈ 35 s
+  after launch on this disc (intro, just before the title). Presses 4 s apart
+  (240 frames) step through intro → title → mode select.
+- **Frame strip:** launch with `FLYCAST_SHOT=<dir>/cur.png FLYCAST_SHOT_EVERY=10`
+  and copy `cur.png` every 2 s. `montage` (ImageMagick, Homebrew) tiles the
+  copies. Two instances (stock + patched) can run side by side.

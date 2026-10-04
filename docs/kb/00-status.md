@@ -1,18 +1,31 @@
 # Project status
 
-**Updated:** 2026-10-04 — **Release 0.3.0 (tag, on `main`): the shipped
+**Updated:** 2026-10-04 — **Release 0.4.0 (tag, on `main`): the shipped
 Dreamcast build of Tetris Kiwamemichi boots on real hardware (GDEMU) with
 the NAOMI GD-ROM SYSTEM logo on the SEGA TM screen, the Tetris cover
-in the BIOS / GDEMU disc menu, and its own name in the disc header.** Scope is a
+in the BIOS / GDEMU disc menu, its own name in the disc header, and free
+play.** Scope is a
 conversion, not a port (README): the arcade GD-ROM carries a finished DC
 build; we decrypt it, relocate `1ST_READ.BIN` to a last data track,
 (0.1.0) fill IP.BIN's empty logo slot, (0.2.0) swap the disc art and
-(0.3.0) replace the sample-disk title. Honest limit: single-rig evidence —
+(0.3.0) replace the sample-disk title and (0.4.0) switch on the game's
+own free-play flag (one byte in `1ST_READ.BIN`). Honest limit: single-rig evidence —
 one console, one GDEMU, one user report per round.
 
 Layout mirrors senkosp2dreamcast: this file is the narrative index,
 `tooling.md` holds recipes/citations/checksums, one file per step holds
-the full record (`iplogo.md`, `gdtex.md`).
+the full record (`iplogo.md`, `gdtex.md`, `freeplay.md`).
+
+**FREE PLAY CLOSED (2026-10-04, operator hardware verdict "works on
+GDEMU"); Release 0.4.0 PROMOTED, tag pushed. No coins needed.** The DC build already has a free-play flag in its coin manager
+(`+0x980` → `+0x904`, checked first by has-credit `0x8c087818` and
+spend-credit `0x8c0877a0`). Init hardcodes it to 0. `build_gdi.py` patches
+that one store in `1ST_READ.BIN` (offset 0x745e2, `0x36`→`0x16`) so it
+stores 1. track04 sha1 `2718605b…`, other tracks unchanged. Flycast real
+BIOS with the stock build as control: FREE PLAY overlay, and Start reaches
+play-style select with 0 credits. GDEMU: works (user report), one-round
+close. track04 `2718605b…` = **0.4.0 track04**; gdi + tracks 01/02/03
+unchanged from 0.3.0. Full record: `freeplay.md`.
 
 **GAME TITLE CLOSED (2026-10-04, operator hardware verdict "works on
 GDEMU"); Release 0.3.0 PROMOTED, tag pushed.** IP.BIN's
