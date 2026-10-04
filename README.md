@@ -59,6 +59,22 @@ framebuffer, since the BIOS draws that screen in 32-bit 0888 and Flycast's own
 screenshot path only sees PVR-rendered frames). Confirmed on real hardware
 (GDEMU, user report, 2026-10-04).
 
+Optional, same rule: drop `0GDTEX.PVR` at the repo root (bare PVRT header,
+RGB565, rectangle layout 0x09, 256×256, 131088 B) and the build replaces the
+disc art, the picture the DC BIOS disc menu and the GDEMU menu show for the
+disc. The shipped `0GDTEX.PVR` is a leftover: a picture of Success's *Pokekano*
+CD, not Tetris. The build Morton-twiddles the new pixels over the donor's extent
+in place (same mechanism as senkosp2dreamcast `make_gdi.py` `patch_gdtex`;
+twiddle order per Flycast `core/rend/texconv.cpp` `twiddle_slow`), keeps the
+donor's 32-byte GBIX+PVRT header and flips only its pixel-format byte from
+ARGB1555 to RGB565, the format the sibling's hardware-verified art uses. The
+cover art is copyrighted, so it is gitignored and not in this repo. Absent, the
+donor art stays and track03 is byte-identical to the row above. Checked offline
+(2026-10-04): the delta is confined to that extent, detwiddling the on-disc
+bytes gives the input pixels exactly, and the same detwiddle turns the donor's
+own art into a correct picture (twiddle-order control). Confirmed on real
+hardware (GDEMU, user report, 2026-10-04).
+
 Reference SHA1s of a verified build:
 
 | file | sha1 |
@@ -68,6 +84,7 @@ Reference SHA1s of a verified build:
 | track02.raw | `6030e25dac2e9c0237aaf908b5037ee16503e0c0` |
 | track03.iso | `d73e09037ee2baac87c0a56242d1003d82f276e6` |
 | track03.iso with `iplogo.mr` | `736cbb18b0c39acc395a46b0692d8ae25dfa0e8f` |
+| track03.iso with `iplogo.mr` + `0GDTEX.PVR` (0.2.0) | `2157c4eeecd89c960eb8c22b167131cfd5833280` |
 | track04.iso | `5c18e14e53b922e6abc57e84e0bf741dd76f0d0d` |
 
 ## Play
@@ -105,3 +122,4 @@ distributed. Tetris Kiwamemichi belongs to its rights holders.
 | Real DC hardware (GDEMU) | ✅ works — user report, 2026-10-03 |
 | CDI (burned disc) | ⬜ not built |
 | SEGA TM-screen logo (`iplogo.mr`) | ✅ Flycast + real BIOS; ✅ GDEMU — user report, 2026-10-04 |
+| Disc art in BIOS / GDEMU menu (`0GDTEX.PVR`) | ✅ offline byte checks; ✅ GDEMU — user report, 2026-10-04 |

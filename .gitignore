@@ -13,6 +13,8 @@
 *.dat
 # Sega TM-screen logo (trademark art) -- see README
 /iplogo.mr
+# Disc art for the BIOS / GDEMU menu (cover art) -- see README
+/0GDTEX.PVR
 
 # junk
 .DS_Store

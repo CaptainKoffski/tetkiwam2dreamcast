@@ -1,16 +1,31 @@
 # Project status
 
-**Updated:** 2026-10-04 — **Release 0.1.0 (tag, on `main`): the shipped
+**Updated:** 2026-10-04 — **Release 0.2.0 (tag, on `main`): the shipped
 Dreamcast build of Tetris Kiwamemichi boots on real hardware (GDEMU) with
-the NAOMI GD-ROM SYSTEM logo on the SEGA TM screen.** Scope is a
+the NAOMI GD-ROM SYSTEM logo on the SEGA TM screen and the Tetris cover
+in the BIOS / GDEMU disc menu.** Scope is a
 conversion, not a port (README): the arcade GD-ROM carries a finished DC
-build; we decrypt it, relocate `1ST_READ.BIN` to a last data track, and
-(0.1.0) fill IP.BIN's empty logo slot. Honest limit: single-rig evidence —
+build; we decrypt it, relocate `1ST_READ.BIN` to a last data track,
+(0.1.0) fill IP.BIN's empty logo slot and (0.2.0) swap the disc art. Honest limit: single-rig evidence —
 one console, one GDEMU, one user report per round.
 
 Layout mirrors senkosp2dreamcast: this file is the narrative index,
 `tooling.md` holds recipes/citations/checksums, one file per step holds
-the full record (`iplogo.md`).
+the full record (`iplogo.md`, `gdtex.md`).
+
+**GDTEX CLOSED (2026-10-04, operator hardware verdict "Work perfectly on
+the HW"); Release 0.2.0 PROMOTED, tag pushed.** Tetris cover art in the BIOS / GDEMU disc menu.** Same move as
+senkosp2dreamcast Task #28: the operator's `0GDTEX.PVR` (bare PVRT, RGB565
+rectangle 256×256, gitignored) is Morton-twiddled over the disc's own
+`0GDTEX.PVR` extent (LBA 81210) in place by `build_gdi.py`. One difference
+from the sibling: this donor stores its art ARGB1555, so the header's
+pixel-format byte is flipped to RGB565 instead of kept verbatim. The
+shipped art turned out to be a leftover *Pokekano* CD picture, and
+detwiddling it cleanly with the same bit order is the twiddle-order
+control. Delta confined to the extent, round trip exact, control build
+without the file = 0.1.0 track03 exactly; candidate track03 sha1
+`2157c4ee…` = **0.2.0 track03**; gdi + tracks 01/02/04 unchanged since
+the base build. Full record: `gdtex.md`.
 
 **IPLOGO CLOSED (2026-10-04, operator hardware verdict): "works on
 GDEMU" — the NAOMI logo on the SEGA TM screen holds on real silicon,

@@ -57,3 +57,33 @@ to override). ~15 s on an M1. Reference sha1s in the README.
   `5cf39417…`, track02 `6030e25d…`, track03
   **`736cbb18b0c39acc395a46b0692d8ae25dfa0e8f`** (base build:
   `d73e0903…`), track04 `5c18e14e…`. Full values in the README table.
+
+## GDTEX tooling (2026-10-04)
+
+- **0GDTEX.PVR** — operator-supplied cover art, repo root, gitignored
+  (`/0GDTEX.PVR`). Accepted shape, asserted by `build_gdi.py`: bare
+  `PVRT` + u32 size, byte 8 = 0x01 (RGB565), byte 9 = 0x09 (rectangle, raw
+  scanlines), u16 LE 256×256 at +12/+14, pixels at +16, 131088 B total.
+  The sibling's PNG → `sips` → `bmp2rgb565.py` path was not carried; feed a
+  ready PVR (the sibling's `scripts/bmp2rgb565.py` + its `patch_gdtex`
+  encode path is the recipe if a PNG is all there is).
+- **Donor extent facts:** root-dir record found by searching the
+  root-directory sector (LBA 45020) for `0GDTEX.PVR;1`, record starts 33
+  bytes before the identifier, extent LBA at +2, size at +10 (LE). Here:
+  LBA 81210, 131104 B, track03 offset 0x46b9000; header GBIX+PVRT, pixel
+  format ARGB1555 (0x00), square twiddled (0x01), 256×256.
+- **Twiddle:** `sp[v]` spreads 8 bits to even positions; offset =
+  `(sp[y] | sp[x] << 1) * 2`. Source: Flycast `core/rend/texconv.cpp:37`
+  `twiddle_slow`. Control: the donor's own twiddled art detwiddles to a
+  clean picture with this order.
+- **PVR decode to PNG (stdlib only):** RGB565 → `(r*255//31, g*255//63,
+  b*255//31)`, ARGB1555 → 5-bit channels at 10/5/0; write an 8-bit RGB
+  PNG with zlib + crc32. ~20-line script, session scratchpad only.
+- **Checks to rerun after any change:** (1) byte-diff old/new track03 and
+  assert every differing offset ∈ {extent+24} ∪ [extent+32, extent+32+
+  131072); (2) detwiddle the on-disc payload and compare to input pixels;
+  (3) control build with the file moved aside → track03 sha1 must equal
+  the previous reference (`736cbb18…` as of 0.1.0).
+- **0.2.0 checksums (sha1):** track03 with `iplogo.mr` + `0GDTEX.PVR`
+  **`2157c4eeecd89c960eb8c22b167131cfd5833280`** (GDEMU-verified
+  2026-10-04); gdi/track01/02/04 unchanged from 0.1.0.
