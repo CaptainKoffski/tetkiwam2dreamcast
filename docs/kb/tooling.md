@@ -96,7 +96,7 @@ to override). ~15 s on an M1. Reference sha1s in the README.
   --adjust-vma=0x8c010000`. Literal-pool loads annotate the value
   (`! 904`), so `grep '! 904$'` finds every field access.
 - **Scripted Start press (fork `core/ui/gui.cpp`, `gui_dumpFramebuffer`, added
-  2026-10-04, uncommitted in the fork):** `FLYCAST_START_AT=<frame>[,<frame>...]`
+  2026-10-04, fork commit `c52ea6987`):** `FLYCAST_START_AT=<frame>[,<frame>...]`
   holds controller-1 Start (`kcode[0]` bit `DC_BTN_START`) for frames
   [N, N+10). Each press logs `START_AT: Start down @N`. The maple poll reads
   global `kcode[]` (`core/network/ggpo.cpp` `getLocalInput`). Frame 1800 ≈ 35 s
