@@ -129,10 +129,10 @@ to override). ~15 s on an M1. Reference sha1s in the README.
   `:136`/`:281`), and Flycast's own stdout logs `Sector Read miss FAD: N`.
   Compare the first reads after the boot file with the GDI's: the GDI's are
   `0xb06e` (45166, PVD), `0xb072`, ….
-- **Read-parameter log (fork working tree, 2026-10-05, not yet committed):**
+- **Read-parameter and SPI log (fork commit `851b823ba`, 2026-10-05..07):**
   `core/hw/gdrom/gdromv3.cpp` CD_READ adds a `GDREAD fad=… secs=… expdtype=N
-  data= subh= head= other= prm=` cartlog line, and GET_TOC adds `GDTOC area=N
-  first=… t3=…`. Flycast doesn't act on `expdtype`, so this log is the only way
+  data= subh= head= other= prm=` cartlog line, GET_TOC adds `GDTOC area=N
+  first=… t3=…`, and every SPI packet logs `GDSPI <12 bytes> sns= pc=`. Flycast doesn't act on `expdtype`, so this log is the only way
   to see the read mode the BIOS asks for. Rebuild: `cmake --build build -j8` in
   the fork.
 - **Strict Flycast (SH4 cache model), 2026-10-05:** a separate tree in the fork,
