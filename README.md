@@ -8,7 +8,7 @@ disc images. Bring your own dump. Working notes live in `docs/kb/`;
 > **This is a conversion, not a port.** The arcade disc already ships a complete
 > Dreamcast build of the game: Success left a DC executable and filesystem inside
 > the encrypted Naomi image. No game code is rewritten or recompiled here, and
-> the only code patch is one byte that switches on the game's own free-play mode. The work is extracting that build and laying it out on a disc the real
+> the only code patch on the GDI is one byte that switches on the game's own free-play mode (the CD-R build adds three more so it runs from a CD). The work is extracting that build and laying it out on a disc the real
 > Dreamcast BIOS will boot. As far as we know, this is the first time it has
 > been confirmed booting on real hardware (GDEMU, 2026-10-03).
 
@@ -33,14 +33,16 @@ Flycast + BIOS path.
 
 ## Build
 
-Requires `chdman` (`brew install rom-tools`, v0.289 used), `clang++`, Python 3.
+Requires `chdman` (`brew install rom-tools`, v0.289 used), `clang++`, Python 3;
+the CDI also needs mkdcdisc (below).
 
 ```
 python3 build_gdi.py            # -> build/gdi/tetris.gdi + track01..04
 ```
 
 Or `make` (same build), `make verify` (checks the reference SHA1s below),
-`make release` (local zip, never upload), `make deploy CARD=/Volumes/GDEMU/NN`.
+`make cdi` (CD-R image, see below), `make release` (`[GDI]` and `[CDI]` zips,
+local only, never upload), `make deploy CARD=/Volumes/GDEMU/NN`.
 
 It reads `tetkiwam.zip` (PIC) and `tetkiwam/gdl-0020.chd` from
 `../naomi2dreamcast/naomi`. Set `NAOMI_DIR=` to point it somewhere else.
@@ -77,6 +79,32 @@ donor art stays and track03 is byte-identical to the row above. Checked offline
 bytes gives the input pixels exactly, and the same detwiddle turns the donor's
 own art into a correct picture (twiddle-order control). Confirmed on real
 hardware (GDEMU, user report, 2026-10-04).
+
+CD-R: `make cdi` → `build/cdi/tetris.cdi`, a self-booting audio/data MIL-CD
+for burning, plus burn notes in `README.txt`. It needs
+[mkdcdisc](https://gitlab.com/simulant/mkdcdisc) (v0.0.4; set `MKDCDISC=` if it
+isn't at `../senkosp2dreamcast/tools/mkdcdisc/build/mkdcdisc`). `make_cdi.py`
+takes the files from the built GDI, so the art, title and free play carry over.
+mkdcdisc writes its own CD IP.BIN (with this disc's title and fields, and
+`iplogo.mr` if present) and scrambles the boot file. senkosp2dreamcast found
+on hardware that a retail GD IP.BIN won't boot from CD. The CD copy of
+`1ST_READ.BIN` gets three more patches, since the game (Katana) assumes it
+booted from a GD-ROM. Its four hardcoded GD sector addresses (45150
+×3, 45166) move to the CD data track (−33298, the old selfboot "binhack"). Its
+mount-time check that the disc type is GD-ROM (`0x80`, at `0x8c010aac`) is
+replaced by the call it never makes: the BIOS sector-mode syscall, set to
+CD-ROM XA (track type 2048, as KOS and DreamShell do). Without it the BIOS
+reads the CD's Mode 2 Form 1 track in GD Mode 1. Flycast doesn't check that,
+but GDEMU showed only a black screen after the TM logo (round 1). And at
+entry it unlocks the G1 bus to the drive (size to `0xa05f74e4`, then read the
+whole BIOS), as KOS `cdrom_init` and the scene's binhack `IP.HAK` do. Without
+it the game's first GD command hung on GDEMU (round 4), and Flycast doesn't
+model the lock.
+The CDI's IP.BIN region is mkdcdisc's `JUE`, not the GD's `J`. Checked in
+Flycast with the real BIOS (2026-10-05): every read asks for Mode 2 Form 1, and it
+plays into a 1P match. **Hardware: boots and plays on GDEMU (round 5, user
+report, 2026-10-07)**, after four rounds of a black screen after the TM logo
+(rounds 1–4). A burned CD-R is still untested. Details: `docs/kb/cdi.md`.
 
 Always on: the build replaces IP.BIN's game title (offset 0x80, 128 bytes,
 space-padded; Flycast `core/reios/reios.h` `ip_meta_t.software_name`, makeip
@@ -125,7 +153,9 @@ Before the title patch (up to tag 0.2.0) the three track03 rows were
 - Free play: no coins needed, Start starts. (Before free play, Y inserted a coin.)
 - GDEMU/ODE: copy `build/gdi/` to the SD card. Run `dot_clean` on it first, since
   macOS `._*` files break GDEMU.
-- The disc is region `J` only, so a US/EU console needs a region-free BIOS or ODE.
+- CD-R: burn `build/cdi/tetris.cdi` as a disc image (DiscJuggler, Alcohol 120%), slow (≤ 8x).
+  Late Dreamcasts that block MIL-CD can't boot any burned CD.
+- The GDI is region `J` only, so a US/EU console needs a region-free BIOS or ODE.
 
 ## Prior art & credits
 
@@ -153,7 +183,7 @@ distributed. Tetris Kiwamemichi belongs to its rights holders.
 |---|---|
 | Flycast, real BIOS → title + attract | ✅ 2026-10-03 |
 | Real DC hardware (GDEMU) | ✅ works — user report, 2026-10-03 |
-| CDI (burned disc) | ⬜ not built |
+| CDI (burned disc, `make cdi`) | ✅ Flycast + real BIOS → in-game, 2026-10-05; ✅ GDEMU round 5 (G1 bus unlock), boots and plays — user report, 2026-10-07, 0.5.0 (rounds 1–4 black: `docs/kb/cdi.md`); ⬜ CD-R |
 | SEGA TM-screen logo (`iplogo.mr`) | ✅ Flycast + real BIOS; ✅ GDEMU — user report, 2026-10-04 |
 | Disc art in BIOS / GDEMU menu (`0GDTEX.PVR`) | ✅ offline byte checks; ✅ GDEMU — user report, 2026-10-04 |
 | Game title in IP.BIN (`TETRIS KIWAMEMICHI`) | ✅ offline byte diff + Flycast real-BIOS boot; ✅ GDEMU — user report, 2026-10-04 |

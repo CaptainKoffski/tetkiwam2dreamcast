@@ -105,3 +105,57 @@ to override). ~15 s on an M1. Reference sha1s in the README.
 - **Frame strip:** launch with `FLYCAST_SHOT=<dir>/cur.png FLYCAST_SHOT_EVERY=10`
   and copy `cur.png` every 2 s. `montage` (ImageMagick, Homebrew) tiles the
   copies. Two instances (stock + patched) can run side by side.
+
+## CDI tooling (2026-10-05)
+
+- **mkdcdisc v0.0.4** (`gitlab.com/simulant/mkdcdisc`, commit `2b98b0d`).
+  Used from the sibling's build at
+  `../senkosp2dreamcast/tools/mkdcdisc/build/mkdcdisc`; set `MKDCDISC=` to
+  point elsewhere. Fresh install, per the sibling's `docs/kb/tooling.md`
+  §Installs: `brew install meson ninja libisofs`, `git clone --depth 1
+  https://gitlab.com/simulant/mkdcdisc.git && cd mkdcdisc && meson setup
+  build && ninja -C build`. Facts this repo relies on: `-M` prints MSINFO
+  (11702 for the default audio/data layout); `-b` scrambles an unscrambled
+  binary; ISO level 2 + Rock Ridge (`src/iso_builder.cpp:90,95`), so the
+  12.3 names like `TEEFFECTFILE.AFS` survive; the data track is padded to the
+  disc's outer edge by default (`-N` turns that off), which is why the
+  `.cdi` is 740 MB and zips to 45 MB.
+- **Inspecting the image:** add `-I` to the mkdcdisc call to also dump
+  the data track as `.iso`. The dump uses **relative** extents (root at LBA
+  19), while the CDI's own PVD has absolute ones (root at 11721; find
+  `\x01CD001\x01` in the .cdi). Use the CDI for absolute-LBA questions.
+- **GD read trace:** `FLYCAST_CARTLOG=<file>` in the fork logs every drive
+  transfer as `GDDMA fad=… secs=…` / `GDPIO …` (`core/hw/gdrom/gdromv3.cpp`
+  `:136`/`:281`), and Flycast's own stdout logs `Sector Read miss FAD: N`.
+  Compare the first reads after the boot file with the GDI's: the GDI's are
+  `0xb06e` (45166, PVD), `0xb072`, ….
+- **Read-parameter log (fork working tree, 2026-10-05, not yet committed):**
+  `core/hw/gdrom/gdromv3.cpp` CD_READ adds a `GDREAD fad=… secs=… expdtype=N
+  data= subh= head= other= prm=` cartlog line, and GET_TOC adds `GDTOC area=N
+  first=… t3=…`. Flycast doesn't act on `expdtype`, so this log is the only way
+  to see the read mode the BIOS asks for. Rebuild: `cmake --build build -j8` in
+  the fork.
+- **Strict Flycast (SH4 cache model), 2026-10-05:** a separate tree in the fork,
+  `build-strict/` (untracked):
+  `cmake -S . -B build-strict -DCMAKE_BUILD_TYPE=Release
+  -DCMAKE_OSX_ARCHITECTURES=arm64 -DUSE_BREAKPAD=OFF -DUSE_HOST_LIBZIP=ON
+  -DZLIB_LIBRARY=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libz.tbd
+  "-DCMAKE_CXX_FLAGS=-DSTRICT_MODE -DTARGET_NO_REC" "-DCMAKE_C_FLAGS=-DSTRICT_MODE
+  -DTARGET_NO_REC"`, then `cmake --build build-strict -j8`. Three traps:
+  - `TARGET_NO_REC` is needed because the arm64 dynarec doesn't compile without
+    FAST_MMU (`rec_arm64.cpp:1456` `mmuAddressLUT`).
+  - `USE_BREAKPAD=OFF` is needed because `dump_syms` wants full Xcode.
+  - The zlib path must be the `.tbd`; a bare `-lz` breaks the link.
+
+  Run with `-config config:Dynarec.Enabled=no` (CLI only; `emu.cfg` stays `yes`).
+  It's about 7–8× slower: the GDI reaches its WARNING screen at about 150 s.
+  **Run one instance at a time:** three in parallel overheated the operator's
+  laptop (2026-10-05).
+- **Entry marker (diagnostic, not in the build):** `build/diag-r3/marker.py`
+  `add_marker(boot)` (cdi.md §round 3 kit). Proof it executed: the fork's PVR
+  log line `CLEO-SPG write VO_CONTROL = …08 … pc=8c105f70`. The white itself
+  never shows in `FLYCAST_SHOT`, which only captures rendered frames.
+- **Emulator leg:** the same launch as §Iplogo, with the `.cdi` as the disc.
+  The fork boots CDIs on the real BIOS as-is. Gameplay leg:
+  `FLYCAST_START_AT=1800,2100,…` (12 presses, 300 frames apart) + a
+  `FLYCAST_SHOT` copy every 8 s up to 120 s gets into a 1P match.

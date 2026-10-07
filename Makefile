@@ -4,31 +4,42 @@
 #   make gdi     = build/gdi/tetris.gdi + track01..04 (build_gdi.py; reads the
 #                  romset from ../naomi2dreamcast/naomi, override NAOMI_DIR=)
 #   make disc    = alias for gdi
+#   make cdi     = build/cdi/tetris.cdi + README.txt -- burnable audio/data
+#                  MIL-CD for CD-R testers (make_cdi.py: re-masters the built
+#                  GDI's files with mkdcdisc + the CD LBA/disc-type patches,
+#                  docs/kb/cdi.md; MKDCDISC= to override the mkdcdisc path)
 #   make verify  = check build/gdi against the 0.4.0 reference SHA1s (README;
 #                  they assume iplogo.mr + 0GDTEX.PVR at the repo root)
-#   make release = "build/[GDI] Tetris Kiwamemichi.zip": gdi + 4 tracks in a
-#                  "Tetris Kiwamemichi/" folder (Sushi Bar / Dolphin Blue
-#                  convention). CONTAINS THE COMMERCIAL GAME -- local use only,
-#                  never upload/commit (build/ is gitignored for this reason).
+#   make release = gdi + cdi + two zips, as in senkosp2dreamcast:
+#                  "build/[GDI] Tetris Kiwamemichi.zip" (gdi + 4 tracks in a
+#                  "Tetris Kiwamemichi/" folder -- Sushi Bar / Dolphin Blue
+#                  convention) and "build/[CDI] Tetris Kiwamemichi.zip"
+#                  (tetris.cdi in the same folder + burn README at the root).
+#                  BOTH CONTAIN THE COMMERCIAL GAME -- local use only, never
+#                  upload/commit (build/ is gitignored for this reason).
 #   make deploy CARD=/Volumes/GDEMU/NN = copy the five disc files to a GDEMU
 #                  card entry + dot_clean + eject (NOEJECT=1 to stage more)
-#   make clean   = rm build/gdi, the release zip, build/extract_dat
+#   make clean   = rm build/gdi, build/cdi, the release zips, build/extract_dat
 #
-# Requires: chdman, clang++, python3 (README §Build).
+# Requires: chdman, clang++, python3; cdi/release also mkdcdisc (README §Build).
 
 OUT = build/gdi
 DISC_FILES = $(OUT)/tetris.gdi $(OUT)/track01.bin $(OUT)/track02.raw \
              $(OUT)/track03.iso $(OUT)/track04.iso
 GAMEDIR = Tetris Kiwamemichi
 ZIP = build/[GDI] $(GAMEDIR).zip
+CDI_ZIP = build/[CDI] $(GAMEDIR).zip
 CARD ?= /Volumes/GDEMU/03
 
-.PHONY: gdi disc verify release deploy clean
+.PHONY: gdi disc cdi verify release deploy clean
 
 gdi:
 	python3 build_gdi.py $(OUT)
 
 disc: gdi
+
+cdi: gdi
+	python3 make_cdi.py $(OUT) build/cdi
 
 verify:
 	cd $(OUT) && printf '%s  %s\n' \
@@ -38,12 +49,17 @@ verify:
 	  05ab2d08d33d637e8f73f971d8387af6321fe274 track03.iso \
 	  2718605b6947bad281ea81283212cccb1f29d534 track04.iso | shasum -c
 
-release: gdi
+release: gdi cdi
 	rm -rf "$(ZIP)" "build/release/$(GAMEDIR)"
 	mkdir -p "build/release/$(GAMEDIR)"
 	ln -f $(DISC_FILES) "build/release/$(GAMEDIR)/"
 	cd build/release && zip -r "../../$(ZIP)" "$(GAMEDIR)"
-	@echo "NOTE: the archive embeds the commercial game -- do not upload."
+	rm -rf "$(CDI_ZIP)" build/cdi-zip
+	mkdir -p "build/cdi-zip/$(GAMEDIR)"
+	ln -f build/cdi/tetris.cdi "build/cdi-zip/$(GAMEDIR)/"
+	cp build/cdi/README.txt build/cdi-zip/
+	cd build/cdi-zip && zip -r "../../$(CDI_ZIP)" .
+	@echo "NOTE: both archives embed the commercial game -- do not upload."
 
 # Sibling's deploy recipe (../senkosp2dreamcast/Makefile, from ../cleopatra):
 # copy, dot_clean, then fail loudly if any ._* AppleDouble sidecar survived --
@@ -59,4 +75,4 @@ deploy: gdi
 	  diskutil eject "$$(df '$(CARD)' | tail -1 | awk '{print $$NF}')")
 
 clean:
-	rm -rf $(OUT) build/release "$(ZIP)" build/extract_dat
+	rm -rf $(OUT) build/cdi build/release build/cdi-zip "$(ZIP)" "$(CDI_ZIP)" build/extract_dat

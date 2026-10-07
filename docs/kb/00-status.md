@@ -1,20 +1,60 @@
 # Project status
 
-**Updated:** 2026-10-04 — **Release 0.4.0 (tag, on `main`): the shipped
+**Updated:** 2026-10-07 — Release 0.5.0: CDI next to the GDI, plays on GDEMU; CD-R burn owed (see
+below). **Release 0.5.0 (tag, on `main`): the shipped
 Dreamcast build of Tetris Kiwamemichi boots on real hardware (GDEMU) with
 the NAOMI GD-ROM SYSTEM logo on the SEGA TM screen, the Tetris cover
 in the BIOS / GDEMU disc menu, its own name in the disc header, and free
-play.** Scope is a
+play, as a GDI and (0.5.0) as a CD-R image (CDI).** Scope is a
 conversion, not a port (README): the arcade GD-ROM carries a finished DC
 build; we decrypt it, relocate `1ST_READ.BIN` to a last data track,
 (0.1.0) fill IP.BIN's empty logo slot, (0.2.0) swap the disc art and
 (0.3.0) replace the sample-disk title and (0.4.0) switch on the game's
-own free-play flag (one byte in `1ST_READ.BIN`). Honest limit: single-rig evidence —
+own free-play flag (one byte in `1ST_READ.BIN`); (0.5.0) the CDI re-masters
+that build for CD-R with three CD-only patches. Honest limit: single-rig evidence —
 one console, one GDEMU, one user report per round.
 
 Layout mirrors senkosp2dreamcast: this file is the narrative index,
 `tooling.md` holds recipes/citations/checksums, one file per step holds
 the full record (`iplogo.md`, `gdtex.md`, `freeplay.md`).
+
+**CDI CLOSED ON GDEMU (2026-10-07, round 5 E, user report "E works, game shows
+up on GDEMU" … "I actually played a bit"); Release 0.5.0 PROMOTED, tag pushed.
+G1 bus unlock.** Round 4 (serial trace)
+showed the CDI's first game GD command (CMD_INIT) stuck in a data phase on
+GDEMU. The scene's binhack `IP.HAK` bootstrap, decoded, unlocks Holly's G1
+bus first (size to `0xa05f74e4`, read the whole BIOS), as KOS `cdrom_init` does.
+Katana doesn't, and Flycast ignores the register. Patch 3 in `make_cdi.py`
+does it at entry. Flycast still plays; on GDEMU the release CDI (E) now shows
+the game and plays, so the traced F wasn't needed. GDI unchanged (track03
+`05ab2d08…`, track04 `2718605b…` = 0.4.0). CD-R burn still owed. Existing GDI→CDI tools can't convert this game as-is:
+binhack fixes 1 of the 4 GDFS FAD words. `cdi.md` §Existing tools.
+
+**CDI GDEMU round 2 FAILED too (2026-10-05)**: same black screen after TM,
+with the read-mode fix. Cache state ruled out in a strict (cache-model)
+Flycast. Round 3 is a diagnostic: an entry marker on the GDI (control) and on
+the CDI, in `build/diag-r3/`, to see whether the game starts at all on
+hardware. `cdi.md`.
+
+**CDI round 2 BUILT (2026-10-05): GDEMU round 1 FAILED, fix
+emulator-verified, hardware owed.** Round 1 showed a black screen after the TM
+logo. Cause found with a new fork log (GDREAD): after its drive init the game
+reads in Mode 1 (CD_READ expected data type 2), and this CD is Mode 2 Form 1.
+The game never calls the sector-mode syscall, and Flycast ignores the field.
+Fix in `make_cdi.py`: gdFsInit's GD-only disc-type check becomes a call to
+sector-mode with KOS's XA params (2048). Flycast: 145/145 reads type 4, into a 1P
+match. `cdi.md`.
+
+**CDI SHIPPED (2026-10-05, emulator-verified; hardware owed): `make
+release` now builds `[GDI]` and `[CDI] Tetris Kiwamemichi.zip`, as in the
+sibling.** `make_cdi.py` re-masters the built GDI's files with mkdcdisc (CD IP
++ scramble, the sibling's GDEMU-proven chain). Two CD-only patches to
+`1ST_READ.BIN`: the binhack-style LBA shift of the GDFS's four hardcoded GD FADs
+(45150 ×3, 45166 → −33298), and the gdFsInit disc-type check (`== 0x80`
+GD-ROM) made always-true (replaced in round 2, see above). Without the second, the game's first FS read is FAD 0
+and it stops on `vmsFileDeviceClass::setDirChashe`. Flycast + real BIOS: into a
+1P match, 554 reads, 0 misses. GDI unchanged (`make verify` OK). Owed: GDEMU,
+then a burned CD-R. Full record: `cdi.md`.
 
 **FREE PLAY CLOSED (2026-10-04, operator hardware verdict "works on
 GDEMU"); Release 0.4.0 PROMOTED, tag pushed. No coins needed.** The DC build already has a free-play flag in its coin manager
