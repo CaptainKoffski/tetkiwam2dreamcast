@@ -215,5 +215,5 @@ distributed. Tetris Kiwamemichi belongs to its rights holders.
 | SEGA TM-screen logo (`iplogo.mr`) | ✅ Flycast + real BIOS; ✅ GDEMU — user report, 2026-10-04 |
 | Disc art in BIOS / GDEMU menu (`0GDTEX.PVR`) | ✅ offline byte checks; ✅ GDEMU — user report, 2026-10-04 |
 | Game title in IP.BIN (`TETRIS KIWAMEMICHI`) | ✅ offline byte diff + Flycast real-BIOS boot; ✅ GDEMU — user report, 2026-10-04 |
-| DreamShell ISO Loader, SD on serial port, defaults (P1 DMA buffers) | ✅ Flycast fork with emulated SD + cache/MMU model, DreamShell's own `sd.bin`: without the patch it hangs, with it the game plays (2026-10-09); ✅ DreamShell on hardware — user report, 2026-10-10, 0.6.0 (before: black screen, no sound); ⬜ GDEMU regression not reported yet |
+| DreamShell ISO Loader, SD on serial port, defaults (P1 DMA buffers) | ✅ Flycast fork with emulated SD + cache/MMU model, DreamShell's own `sd.bin`: without the patch it hangs, with it the game plays (2026-10-09); ✅ DreamShell on hardware — user report, 2026-10-10, 0.6.0 (before: black screen, no sound); ✅ GDEMU regression — user report, 2026-10-10 |
 | Free play (1-byte `1ST_READ.BIN` patch) | ✅ Flycast + real BIOS, stock-build control; ✅ GDEMU — user report, 2026-10-04 |

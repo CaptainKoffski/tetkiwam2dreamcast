@@ -18,8 +18,8 @@ Layout mirrors senkosp2dreamcast: this file is the narrative index,
 `tooling.md` holds recipes/citations/checksums, one file per step holds
 the full record (`iplogo.md`, `gdtex.md`, `freeplay.md`).
 
-**DREAMSHELL SD CLOSED ON HARDWARE (2026-10-10, user report "works on DreamShell
-now"); Release 0.6.0.** Root cause and fix found 2026-10-09: Reports: black screen, no sound, after isoldr's loader text, from
+**DREAMSHELL SD CLOSED ON HARDWARE (2026-10-10, user reports "works on DreamShell
+now", then "works on GDEMU too"); Release 0.6.0.** Root cause and fix found 2026-10-09: Reports: black screen, no sound, after isoldr's loader text, from
 ISO Loader with default settings (SD on the serial port, VGA, DreamShell launched
 from GDEMU). The game turns the SH4 MMU on for its store queues, and its Katana gdc
 read passes DMA buffers as physical `0x0c…` addresses. isoldr's SD firmware has

@@ -107,6 +107,5 @@ reads `expdtype=4`.
 
 Kit: `build/gdi/` from this build (track04 `27bc2a19…`), copied to the DreamShell SD
 card and launched from ISO Loader with **default settings**. User report:
-"works on DreamShell now." Shipped as 0.6.0. GDEMU regression on this build
-hasn't been reported. By construction the GDI differs from 0.5.0 only in the
-DMA mask byte, and the real-BIOS GDI/CDI legs above play.
+"works on DreamShell now." Shipped as 0.6.0. GDEMU regression on 0.6.0: "works
+on GDEMU too" (user report, 2026-10-10).
