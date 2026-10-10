@@ -14,6 +14,9 @@ own free-play flag (one byte in `1ST_READ.BIN`); (0.5.0) the CDI re-masters
 that build for CD-R with three CD-only patches. Honest limit: single-rig evidence —
 one console, one GDEMU, one user report per round.
 
+**COMPOSITE VIDEO WORKS (2026-10-10, user report: runs without issues on
+composite, just like on VGA).** No change needed; README Status has the row.
+
 Layout mirrors senkosp2dreamcast: this file is the narrative index,
 `tooling.md` holds recipes/citations/checksums, one file per step holds
 the full record (`iplogo.md`, `gdtex.md`, `freeplay.md`).

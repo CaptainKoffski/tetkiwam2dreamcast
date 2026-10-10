@@ -184,6 +184,7 @@ Before the title patch (up to tag 0.2.0) the three track03 rows were
 - CD-R: burn `build/cdi/tetris.cdi` as a disc image (DiscJuggler, Alcohol 120%), slow (≤ 8x).
   Late Dreamcasts that block MIL-CD can't boot any burned CD.
 - The GDI is region `J` only, so a US/EU console needs a region-free BIOS or ODE.
+- Video: VGA and composite both work on hardware (user report, 2026-10-10).
 
 ## Prior art & credits
 
@@ -217,3 +218,4 @@ distributed. Tetris Kiwamemichi belongs to its rights holders.
 | Game title in IP.BIN (`TETRIS KIWAMEMICHI`) | ✅ offline byte diff + Flycast real-BIOS boot; ✅ GDEMU — user report, 2026-10-04 |
 | DreamShell ISO Loader, SD on serial port, defaults (P1 DMA buffers) | ✅ Flycast fork with emulated SD + cache/MMU model, DreamShell's own `sd.bin`: without the patch it hangs, with it the game plays (2026-10-09); ✅ DreamShell on hardware — user report, 2026-10-10, 0.6.0 (before: black screen, no sound); ✅ GDEMU regression — user report, 2026-10-10 |
 | Free play (1-byte `1ST_READ.BIN` patch) | ✅ Flycast + real BIOS, stock-build control; ✅ GDEMU — user report, 2026-10-04 |
+| Video output on hardware | ✅ VGA — the DreamShell rig (`docs/kb/dreamshell.md`); ✅ composite, runs without issues as on VGA — user report, 2026-10-10 |
