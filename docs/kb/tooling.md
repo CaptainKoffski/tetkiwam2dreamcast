@@ -98,7 +98,9 @@ to override). ~15 s on an M1. Reference sha1s in the README.
 - **Scripted Start press (fork `core/ui/gui.cpp`, `gui_dumpFramebuffer`, added
   2026-10-04, fork commit `c52ea6987`):** `FLYCAST_START_AT=<frame>[,<frame>...]`
   holds controller-1 Start (`kcode[0]` bit `DC_BTN_START`) for frames
-  [N, N+10). Each press logs `START_AT: Start down @N`. The maple poll reads
+  [N, N+10). Each press logs `START_AT: mask 8 down @N` (since fork commit
+  `3d5047025`, which also takes other buttons, §Controls tooling; before
+  that, `START_AT: Start down @N`). The maple poll reads
   global `kcode[]` (`core/network/ggpo.cpp` `getLocalInput`). Frame 1800 ≈ 35 s
   after launch on this disc (intro, just before the title). Presses 4 s apart
   (240 frames) step through intro → title → mode select.
@@ -208,3 +210,29 @@ to override). ~15 s on an M1. Reference sha1s in the README.
 - **Gotcha:** about one launch in three dies at startup with `Verify Failed:
   &mem_b[0] == … sq_buffer …` (`core/hw/sh4/dyna/driver.cpp:349`), before any
   guest code runs. Relaunch; the session's runner retries automatically.
+
+## Controls tooling (2026-10-10)
+
+- **Fork hooks (fork commit `3d5047025` in `../flycast4naomi2dreamcast`, 2026-10-10):**
+  - `FLYCAST_START_AT` entries take an optional hex mask, `<frame>:<mask>`: the
+    `DC_BTN_*`/`DC_DPAD_*` kcode bits to hold for [N, N+10)
+    (`core/input/gamepad.h`: C 1, B 2, A 4, Start 8, up 10, down 20, left 40,
+    right 80, Z 100, Y 200, X 400), plus 10000 / 20000 = L / R trigger fully
+    pressed. A bare `<frame>` is still Start.
+  - `FLYCAST_TRIG=<u16>` holds controller-1 L and R at that value every frame.
+    The axis byte is the value `>> 8` (`core/hw/maple/maple_cfg.cpp`
+    `GetInput`), so `0x8000` sends `0x80`.
+  - `FLYCAST_STICKFILL=<byte>` replaces the Arcade Stick's `0x80` filler on its
+    undeclared axes.
+  - A `%u` in `FLYCAST_SHOT` names each shot by its frame number. Two legs with
+    the same `START_AT` schedule then compare shot for shot.
+- **Leg:** the §Iplogo launch plus `-config input:device1=4` (Arcade Stick) or
+  `=0` (pad), `FLYCAST_SHOT=<dir>/f%05u.png FLYCAST_SHOT_EVERY=240`,
+  `FLYCAST_START_AT=1800,2100,…,5100` (12 presses, 300 frames apart; the
+  match starts at about frame 5100), stop by PID after 140 s. For a button
+  probe, append `5400:<mask>,6300:<mask>`. Compare with ImageMagick
+  `compare -metric AE a.png b.png null:` (0 = identical). Two pad legs were
+  identical on all 33 shots. Two legs can run in parallel; results are the
+  same. Leg runner, retries on the startup `Verify Failed` (§DreamShell
+  tooling gotcha): session scratchpad only.
+- Results: `controls.md`.

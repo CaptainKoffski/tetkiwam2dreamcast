@@ -17,9 +17,19 @@ one console, one GDEMU, one user report per round.
 **COMPOSITE VIDEO WORKS (2026-10-10, user report: runs without issues on
 composite, just like on VGA).** No change needed; README Status has the row.
 
+**ARCADE STICK: NO STUCK INPUT, AND PLAYABLE (2026-10-10, emulator only).**
+senkosp2dreamcast's stick bug (triggers stuck held) doesn't happen here. Flycast's
+Arcade Stick gives the same shots as a pad for a whole leg into a 1P match, even
+with its undeclared-trigger filler forced to `0xFF`, which changes the game when
+it comes from a pad's triggers. So Sega's pd library ignores axes the device
+doesn't declare. Button map: A/B rotate, Y and R HOLD, lever up hard drop;
+X, L, C and Z do nothing. So the stick has every action. No change to the build.
+Real stick on hardware: untested. Fork hooks: commit `3d5047025`. Full record:
+`controls.md`.
+
 Layout mirrors senkosp2dreamcast: this file is the narrative index,
 `tooling.md` holds recipes/citations/checksums, one file per step holds
-the full record (`iplogo.md`, `gdtex.md`, `freeplay.md`).
+the full record (`iplogo.md`, `gdtex.md`, `freeplay.md`, `controls.md`).
 
 **DREAMSHELL SD CLOSED ON HARDWARE (2026-10-10, user reports "works on DreamShell
 now", then "works on GDEMU too"); Release 0.6.0.** Root cause and fix found 2026-10-09: Reports: black screen, no sound, after isoldr's loader text, from

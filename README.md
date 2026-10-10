@@ -177,6 +177,9 @@ Before the title patch (up to tag 0.2.0) the three track03 rows were
 ## Play
 
 - Free play: no coins needed, Start starts. (Before free play, Y inserted a coin.)
+- Controls: lever/D-pad moves, up is hard drop; A and B rotate (opposite ways);
+  Y or R is HOLD. X, L, C and Z do nothing. A DC arcade stick (no triggers) has
+  every action (Flycast, 2026-10-10; `docs/kb/controls.md`).
 - GDEMU/ODE: copy `build/gdi/` to the SD card. Run `dot_clean` on it first, since
   macOS `._*` files break GDEMU.
 - DreamShell (SD card on the serial port): copy `build/gdi/` to the SD card and
@@ -218,4 +221,5 @@ distributed. Tetris Kiwamemichi belongs to its rights holders.
 | Game title in IP.BIN (`TETRIS KIWAMEMICHI`) | ✅ offline byte diff + Flycast real-BIOS boot; ✅ GDEMU — user report, 2026-10-04 |
 | DreamShell ISO Loader, SD on serial port, defaults (P1 DMA buffers) | ✅ Flycast fork with emulated SD + cache/MMU model, DreamShell's own `sd.bin`: without the patch it hangs, with it the game plays (2026-10-09); ✅ DreamShell on hardware — user report, 2026-10-10, 0.6.0 (before: black screen, no sound); ✅ GDEMU regression — user report, 2026-10-10 |
 | Free play (1-byte `1ST_READ.BIN` patch) | ✅ Flycast + real BIOS, stock-build control; ✅ GDEMU — user report, 2026-10-04 |
+| Arcade stick (no stuck input; every action reachable) | ✅ Flycast Arcade Stick, pad-identical shots and per-button map, 2026-10-10 (`docs/kb/controls.md`); ⬜ real stick on hardware |
 | Video output on hardware | ✅ VGA — the DreamShell rig (`docs/kb/dreamshell.md`); ✅ composite, runs without issues as on VGA — user report, 2026-10-10 |
