@@ -166,7 +166,7 @@ to override). ~15 s on an M1. Reference sha1s in the README.
   user's SD bundle (`~/Downloads/DreamShell_v4`, changelog "4.0.4.Release",
   `sd.bin` string "SD-SPI loader v0.8.4"). The same folder has
   `DreamShell_v4.0.4_Release.cdi` and `DS/EMU_DS_CORE.BIN`.
-- **Fork instrumentation (uncommitted in `../flycast4naomi2dreamcast`):**
+- **Fork instrumentation (fork commit `24b4dc256` in `../flycast4naomi2dreamcast`, 2026-10-10):**
   - **Emulated SD card** (`core/hw/sh4/modules/serial.cpp`, `namespace sdcard`).
     `FLYCAST_SDIMG=<raw MBR+FAT image>` attaches a read-only SDHC card to the SCIF
     pins as DreamShell's adapter wires them: RTS=/CS, CTS=CLK, TxD=MOSI, RxD=MISO,
