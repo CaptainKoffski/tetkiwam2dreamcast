@@ -159,3 +159,52 @@ to override). ~15 s on an M1. Reference sha1s in the README.
   The fork boots CDIs on the real BIOS as-is. Gameplay leg:
   `FLYCAST_START_AT=1800,2100,…` (12 presses, 300 frames apart) + a
   `FLYCAST_SHOT` copy every 8 s up to 120 s gets into a 1P match.
+
+## DreamShell tooling (2026-10-08..09)
+
+- **DreamShell source:** `../senkosp2dreamcast/tools/dreamshell-4.0.4` matches the
+  user's SD bundle (`~/Downloads/DreamShell_v4`, changelog "4.0.4.Release",
+  `sd.bin` string "SD-SPI loader v0.8.4"). The same folder has
+  `DreamShell_v4.0.4_Release.cdi` and `DS/EMU_DS_CORE.BIN`.
+- **Fork instrumentation (uncommitted in `../flycast4naomi2dreamcast`):**
+  - **Emulated SD card** (`core/hw/sh4/modules/serial.cpp`, `namespace sdcard`).
+    `FLYCAST_SDIMG=<raw MBR+FAT image>` attaches a read-only SDHC card to the SCIF
+    pins as DreamShell's adapter wires them: RTS=/CS, CTS=CLK, TxD=MOSI, RxD=MISO,
+    in SPI mode 0. It answers CMD0/8/55/41/58/59/16/9/10/13/17/18/12. With TE=1 it
+    holds MOSI high, which models the transmitter owning the pin.
+  - `FLYCAST_SDCYC=<n>` charges n extra cycles per `SCSPTR2` access. Measured:
+    0 → about 2.7 MB/s, 14 → 487 KB/s, 55 → 140 KB/s.
+  - cartlog `SDCMD` lines: every command except reads, plus read 1–3 and every
+    500th, with emulated time and block count.
+  - `SCIFWR` (SCIF register writes). `SCSPTR2`/`SCFTDR2` are capped at 300 lines;
+    `SCSCR2`/`SCFCR2` at 5000.
+  - `core/hw/mem/addrspace.cpp`:
+    - `ISOLDRBANDLOW`: the lowest game-code store in `0x8c004000..0x8c010000`.
+    - `PAGEFIRST`: the first store to each 4 KB RAM page once game code has run.
+      Interpreter only.
+  - `core/hw/gdrom/gdromv3.cpp` `GDDMADST`: GD DMA destination and length.
+- **SD card image:** `mkfile -n 200m sd.img`, then
+  `hdiutil attach -imagekey diskimage-class=CRawDiskImage -nomount sd.img`. Check
+  that `diskutil info` says `Protocol: Disk Image` **before** running
+  `diskutil partitionDisk <dev> MBR FAT32 SDCARD 100%`. Copy the GDI into
+  `/TETRIS/`, then `hdiutil detach`. To make fragmented copies, interleave writes
+  with a filler file. `fatfrag.py` (session scratch) counts fragments from the FAT.
+- **DreamShell test disc:** copy `DS/`, then patch its `lua/startup.lua`: before
+  `OpenApp(STARTUP_APP)`, open `minilzo`, `isofs` and `isoldr`, then
+  `os.execute("isoldr -i -f /cd/TETRIS/tetris.gdi -d sd -P /cd/TETRIS/sdlike.cfg")`.
+  `sdlike.cfg` holds `dma 0, async 8, irq 0, mode 0`, the same as the GUI's defaults.
+  Put the GDI in `TETRIS/`, then run `mkdcdisc -b DS/EMU_DS_CORE.BIN -D <root>
+  -o ds.cdi`.
+  - Use `EMU_DS_CORE.BIN`: the normal core's SD probe misbehaves with nothing on
+    the port.
+  - Use a CDI, not `-F gdi`: DreamShell didn't find `/cd/DS` on the GDI build.
+  - DreamShell itself is the same either way; only the game's reads go to the SD.
+- **Strict build** (cache + MMU model, `build-strict/`, §CDI) is what reproduces
+  the hang. Plain Flycast doesn't translate U0 addresses for DC games.
+  - Rebuild with `cmake --build build-strict -j8`.
+  - Run with `-config config:Dynarec.Enabled=no`, one instance at a time.
+  - DreamShell → game attract takes about 3–5 min of wall time.
+  - `EXC epc= evn=` lines are the exception tripwire.
+- **Gotcha:** about one launch in three dies at startup with `Verify Failed:
+  &mem_b[0] == … sq_buffer …` (`core/hw/sh4/dyna/driver.cpp:349`), before any
+  guest code runs. Relaunch; the session's runner retries automatically.

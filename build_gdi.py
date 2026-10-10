@@ -64,6 +64,20 @@ FREEPLAY = 0x8c0845e2 - 0x8c010000
 assert boot[FREEPLAY:FREEPLAY + 2] == b"\x36\x0c", "unexpected 1ST_READ.BIN at the free-play site"
 boot = boot[:FREEPLAY] + b"\x16" + boot[FREEPLAY + 1:]
 
+# DMA reads with a P1 buffer address, for DreamShell's ISO Loader from SD. The game
+# turns the SH4 MMU on (MMUCR = 0x40005 at 0x8c015830; it maps the store queues
+# through the TLB). Its Katana gdc read request (0x8c01032a) hands the GD syscall
+# DMA buffers as physical addresses (buf & 0x1fffffff -> 0x0c...), which is a
+# translated U0 address once the MMU is on. Real GD DMA never goes through the MMU,
+# but isoldr's SD firmware has no DMA: it copies the sectors to that address with
+# the CPU and takes a TLB miss into the game's crash handler (black, no sound).
+# Widen the mask literal to 0xffffffff so DMA reads pass the caller's P1 address
+# (PIO reads still OR in 0xa0000000). Holly keeps only bits 28:5 of SB_GDSTAR
+# (Flycast core/hw/holly/sb.cpp:385), so real DMA lands at the same RAM.
+DMAMASK = 0x8c010508 - 0x8c010000
+assert boot[DMAMASK:DMAMASK + 4] == b"\xff\xff\xff\x1f", "unexpected 1ST_READ.BIN at the gdc DMA mask"
+boot = boot[:DMAMASK + 3] + b"\xff" + boot[DMAMASK + 4:]
+
 # Disc art: the DC BIOS disc menu and GDEMU's menu draw the root-dir 0GDTEX.PVR
 # (shipped here as Sega's leftover "Pokekano" CD picture: GBIX+PVRT header,
 # ARGB1555 square-twiddled 256x256). Optional 0GDTEX.PVR at repo root -- bare

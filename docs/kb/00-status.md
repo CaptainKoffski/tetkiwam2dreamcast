@@ -1,7 +1,7 @@
 # Project status
 
-**Updated:** 2026-10-07 — Release 0.5.0: CDI next to the GDI, plays on GDEMU; CD-R burn owed (see
-below). **Release 0.5.0 (tag, on `main`): the shipped
+**Updated:** 2026-10-10 — Release 0.6.0: runs from DreamShell's ISO Loader on an SD card (DMA reads pass a P1 buffer address; the game runs with the MMU on), DreamShell-verified; before that,
+Release 0.5.0: CDI next to the GDI, plays on GDEMU; CD-R burn owed (see below). **Release 0.5.0 (tag, on `main`): the shipped
 Dreamcast build of Tetris Kiwamemichi boots on real hardware (GDEMU) with
 the NAOMI GD-ROM SYSTEM logo on the SEGA TM screen, the Tetris cover
 in the BIOS / GDEMU disc menu, its own name in the disc header, and free
@@ -17,6 +17,24 @@ one console, one GDEMU, one user report per round.
 Layout mirrors senkosp2dreamcast: this file is the narrative index,
 `tooling.md` holds recipes/citations/checksums, one file per step holds
 the full record (`iplogo.md`, `gdtex.md`, `freeplay.md`).
+
+**DREAMSHELL SD CLOSED ON HARDWARE (2026-10-10, user report "works on DreamShell
+now"); Release 0.6.0.** Root cause and fix found 2026-10-09: Reports: black screen, no sound, after isoldr's loader text, from
+ISO Loader with default settings (SD on the serial port, VGA, DreamShell launched
+from GDEMU). The game turns the SH4 MMU on for its store queues, and its Katana gdc
+read passes DMA buffers as physical `0x0c…` addresses. isoldr's SD firmware has
+no DMA, so it copies sectors there with the CPU, takes a TLB miss, and lands in
+the game's crash handler. Fix: one byte in `1ST_READ.BIN` (mask literal
+`0x1fffffff` → `0xffffffff` at `0x8c010508`), so DMA reads pass the P1 buffer
+address. Holly masks `SB_GDSTAR` to bits 28:5, so real DMA is unchanged.
+
+Round 1's serial-console patch was the wrong cause (still black on hardware) and
+is dropped: isoldr re-inits SPI after the game's SCIF setup.
+
+Found with a new SD-card model on the fork's serial port running DreamShell's real
+`sd.bin`. Plain Flycast plays every variant. The cache/MMU (strict) build
+reproduces the hang and shows the fix playing. GDI/CDI real-BIOS legs unchanged.
+track04 `27bc2a19…`; track01–03 and `.gdi` unchanged. Full record: `dreamshell.md`.
 
 **CDI CLOSED ON GDEMU (2026-10-07, round 5 E, user report "E works, game shows
 up on GDEMU" … "I actually played a bit"); Release 0.5.0 PROMOTED, tag pushed.

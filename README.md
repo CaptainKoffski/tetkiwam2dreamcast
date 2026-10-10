@@ -8,7 +8,7 @@ disc images. Bring your own dump. Working notes live in `docs/kb/`;
 > **This is a conversion, not a port.** The arcade disc already ships a complete
 > Dreamcast build of the game: Success left a DC executable and filesystem inside
 > the encrypted Naomi image. No game code is rewritten or recompiled here, and
-> the only code patch on the GDI is one byte that switches on the game's own free-play mode (the CD-R build adds three more so it runs from a CD). The work is extracting that build and laying it out on a disc the real
+> the only code patches on the GDI are two bytes: one switches on the game's own free-play mode, the other makes its disc reads hand over a normal buffer address so DreamShell's ISO Loader can serve them from an SD card (the CD-R build adds three more so it runs from a CD). The work is extracting that build and laying it out on a disc the real
 > Dreamcast BIOS will boot. As far as we know, this is the first time it has
 > been confirmed booting on real hardware (GDEMU, 2026-10-03).
 
@@ -132,6 +132,31 @@ play-style select with 0 credits. The stock build stays on INSERT COIN(S) /
 CREDIT(S) 0 under the same scripted Start presses. Confirmed on real hardware
 (GDEMU, user report, 2026-10-04).
 
+Always on: DMA reads with a P1 buffer address, for DreamShell's ISO Loader
+from an SD card. The game turns the SH4 MMU on (`MMUCR = 0x40005` at
+`0x8c015830`, to map its store queues through the TLB). Its Katana gdc read
+request (`0x8c01032a`) passes DMA buffers to the GD syscall as physical addresses
+(`buf & 0x1fffffff`, so `0x0c…`). Real GD DMA never goes through the MMU, which is
+why GDEMU works. isoldr's SD firmware has no DMA, though: it copies each sector
+to that address with the CPU (`mov.b r1,@r3` in `spi_rec_data`). With the MMU on,
+`0x0c…` is a translated address with no TLB entry, so the copy takes a TLB miss
+into the game's own crash handler: black screen, no sound. `build_gdi.py` widens
+the mask literal at `0x8c010508` from `0x1fffffff` to `0xffffffff` (file offset
+`0x50b`, `0x1f` → `0xff`, original asserted). DMA reads then pass the caller's
+own P1 address, and PIO reads still get `| 0xa0000000`. Holly keeps only bits
+28:5 of `SB_GDSTAR` (Flycast `core/hw/holly/sb.cpp:385`), so real DMA lands in
+the same RAM. Checked 2026-10-09:
+- In a Flycast fork with an SD card emulated on the serial port and the SH4
+  cache/MMU model, running DreamShell 4.0.4's own `sd.bin` with default
+  settings: the build without this patch hits the TLB-miss loop and never shows
+  the game; with it, the game plays through to attract.
+- The real-BIOS GDI and CDI legs play into a 1P match, with the same DMA
+  transfers as before.
+
+**Confirmed on real hardware:** DreamShell 4.0.4 ISO Loader, SD card on the serial
+port, default settings: "works on DreamShell now" (user report, 2026-10-10).
+Details: `docs/kb/dreamshell.md`.
+
 Reference SHA1s of a verified build:
 
 | file | sha1 |
@@ -142,7 +167,8 @@ Reference SHA1s of a verified build:
 | track03.iso | `82f8925aa94dd2ac266acf5cfae37dfb5ec71444` |
 | track03.iso with `iplogo.mr` | `58870f766fa136f5a8fb760dad3cfd23b1bc9bed` |
 | track03.iso with `iplogo.mr` + `0GDTEX.PVR` (0.3.0) | `05ab2d08d33d637e8f73f971d8387af6321fe274` |
-| track04.iso (free play, 0.4.0) | `2718605b6947bad281ea81283212cccb1f29d534` |
+| track04.iso (free play + P1 DMA buffers) | `27bc2a196964a9f131dec3229099f14118ee7e4e` |
+| track04.iso (free play, 0.4.0–0.5.0) | `2718605b6947bad281ea81283212cccb1f29d534` |
 | track04.iso before free play (≤ 0.3.0) | `5c18e14e53b922e6abc57e84e0bf741dd76f0d0d` |
 
 Before the title patch (up to tag 0.2.0) the three track03 rows were
@@ -153,6 +179,8 @@ Before the title patch (up to tag 0.2.0) the three track03 rows were
 - Free play: no coins needed, Start starts. (Before free play, Y inserted a coin.)
 - GDEMU/ODE: copy `build/gdi/` to the SD card. Run `dot_clean` on it first, since
   macOS `._*` files break GDEMU.
+- DreamShell (SD card on the serial port): copy `build/gdi/` to the SD card and
+  start it from ISO Loader with default settings. Loads are slower than GDEMU.
 - CD-R: burn `build/cdi/tetris.cdi` as a disc image (DiscJuggler, Alcohol 120%), slow (≤ 8x).
   Late Dreamcasts that block MIL-CD can't boot any burned CD.
 - The GDI is region `J` only, so a US/EU console needs a region-free BIOS or ODE.
@@ -187,4 +215,5 @@ distributed. Tetris Kiwamemichi belongs to its rights holders.
 | SEGA TM-screen logo (`iplogo.mr`) | ✅ Flycast + real BIOS; ✅ GDEMU — user report, 2026-10-04 |
 | Disc art in BIOS / GDEMU menu (`0GDTEX.PVR`) | ✅ offline byte checks; ✅ GDEMU — user report, 2026-10-04 |
 | Game title in IP.BIN (`TETRIS KIWAMEMICHI`) | ✅ offline byte diff + Flycast real-BIOS boot; ✅ GDEMU — user report, 2026-10-04 |
+| DreamShell ISO Loader, SD on serial port, defaults (P1 DMA buffers) | ✅ Flycast fork with emulated SD + cache/MMU model, DreamShell's own `sd.bin`: without the patch it hangs, with it the game plays (2026-10-09); ✅ DreamShell on hardware — user report, 2026-10-10, 0.6.0 (before: black screen, no sound); ⬜ GDEMU regression not reported yet |
 | Free play (1-byte `1ST_READ.BIN` patch) | ✅ Flycast + real BIOS, stock-build control; ✅ GDEMU — user report, 2026-10-04 |
