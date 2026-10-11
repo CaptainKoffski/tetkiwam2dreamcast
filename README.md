@@ -224,6 +224,7 @@ Before the title patch (up to tag 0.2.0) the three track03 rows were
   source of the GD-ROM file lookup and Naomi DES code in `tools/`.
 - **megavolt85's Atomiswave→DC ports** (Dolphin Blue, Sushi Bar) showed the
   boot-file-in-the-last-data-track layout, documented in the cfp2dreamcast port.
+- **stuart2773** — disc cover art, Sega TM-screen art, alpha-testing.
 
 ## License
 
