@@ -1,6 +1,6 @@
 # Project status
 
-**Updated:** 2026-10-10 — Release 0.6.0: runs from DreamShell's ISO Loader on an SD card (DMA reads pass a P1 buffer address; the game runs with the MMU on), DreamShell-verified; before that,
+**Updated:** 2026-10-11 — Release 0.7.0: HOLD on C for arcade sticks (C gives the same frames as Y in Flycast's Arcade Stick; standard pads show no regression on GDEMU, user report; real stick owed to testers); before that, Release 0.6.0: runs from DreamShell's ISO Loader on an SD card (DMA reads pass a P1 buffer address; the game runs with the MMU on), DreamShell-verified; before that,
 Release 0.5.0: CDI next to the GDI, plays on GDEMU; CD-R burn owed (see below). **Release 0.5.0 (tag, on `main`): the shipped
 Dreamcast build of Tetris Kiwamemichi boots on real hardware (GDEMU) with
 the NAOMI GD-ROM SYSTEM logo on the SEGA TM screen, the Tetris cover
@@ -16,6 +16,17 @@ one console, one GDEMU, one user report per round.
 
 **COMPOSITE VIDEO WORKS (2026-10-10, user report: runs without issues on
 composite, just like on VGA).** No change needed; README Status has the row.
+
+**HOLD ON C (2026-10-11); Release 0.7.0. Standard DC controllers on GDEMU: no
+regression (user report). Real arcade stick: owed (the user's testers).** On a stick, HOLD was
+only on Y (top row), since the game checks just Y and R. `build_gdi.py` now
+rewrites 58 bytes of Sega's pd library (`0x8c01341e`) so C sets Y's bit before
+press/release are derived. In Flycast's Arcade Stick, C gives the same frames as Y
+on the GDI and the CDI, and pad legs are unchanged. One side effect, confirmed by a
+control build: on the stick the new code alone shifts the match's starting piece
+queue, with identical input words. track04 `46041d6c…`; track01–03/.gdi
+unchanged. Found with three new fork hooks (RAM dump, read watch, RAM-word log;
+fork commit `a62b33164`). Full record: `controls.md` §HOLD on C.
 
 **ARCADE STICK: NO STUCK INPUT, AND PLAYABLE (2026-10-10, emulator only).**
 senkosp2dreamcast's stick bug (triggers stuck held) doesn't happen here. Flycast's

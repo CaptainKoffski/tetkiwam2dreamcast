@@ -7,8 +7,8 @@ disc images. Bring your own dump. Working notes live in `docs/kb/`;
 
 > **This is a conversion, not a port.** The arcade disc already ships a complete
 > Dreamcast build of the game: Success left a DC executable and filesystem inside
-> the encrypted Naomi image. No game code is rewritten or recompiled here, and
-> the only code patches on the GDI are two bytes: one switches on the game's own free-play mode, the other makes its disc reads hand over a normal buffer address so DreamShell's ISO Loader can serve them from an SD card (the CD-R build adds three more so it runs from a CD). The work is extracting that build and laying it out on a disc the real
+> the encrypted Naomi image. No game code is recompiled here, and the code patches
+> on the GDI are small: one byte switches on the game's own free-play mode, one byte makes its disc reads hand over a normal buffer address so DreamShell's ISO Loader can serve them from an SD card, and a 58-byte block in Sega's pad library makes an arcade stick's C button a second HOLD (the CD-R build adds three more so it runs from a CD). The work is extracting that build and laying it out on a disc the real
 > Dreamcast BIOS will boot. As far as we know, this is the first time it has
 > been confirmed booting on real hardware (GDEMU, 2026-10-03).
 
@@ -157,6 +157,27 @@ the same RAM. Checked 2026-10-09:
 port, default settings: "works on DreamShell now" (user report, 2026-10-10).
 Details: `docs/kb/dreamshell.md`.
 
+Always on: HOLD on C, for arcade sticks. The game checks only two buttons for
+HOLD: Y and the R trigger (its HOLD check at `0x8c0d385c` tests action slots 9
+and 16). A DC arcade stick has no triggers, so HOLD sat alone on the top row.
+`build_gdi.py` rewrites 58 bytes of Sega's pd library at `0x8c01341e`, the per-port
+step that turns each frame's button word into on/off/press/release. It sets
+Y's bit whenever C's is set (`on |= (on & 1) << 9`), before the rest are derived,
+so C does whatever Y does. The original bytes are asserted first. A standard pad has
+no C, so pads are unchanged. Y's bit survives the library's capability mask on a
+stick (`0x7ff`); R's wouldn't. The original block reloads the same stack slot before
+every access, so the shorter rewrite has room for the alias. Source:
+`tools/hold_c.s`. Checked in the Flycast fork with its Arcade Stick (2026-10-11):
+- C during a 1P match gives the same 30 frames as Y, on the GDI and on the CDI.
+- On the pad, the no-press and R legs are pixel-identical to the build before.
+- One side effect: on the stick the rewritten block changes the piece queue the
+  match starts with. The library's input words are identical with and without
+  the patch. The same rewrite with the alias instruction turned into a `nop` gives
+  the same queue, so the change comes from the new code (most likely CPU timing
+  feeding the piece randomizer), not from input.
+On real hardware (GDEMU), standard DC controllers show no regression (user report,
+2026-10-11). A real arcade stick hasn't been tested yet. Details: `docs/kb/controls.md`.
+
 Reference SHA1s of a verified build:
 
 | file | sha1 |
@@ -167,7 +188,8 @@ Reference SHA1s of a verified build:
 | track03.iso | `82f8925aa94dd2ac266acf5cfae37dfb5ec71444` |
 | track03.iso with `iplogo.mr` | `58870f766fa136f5a8fb760dad3cfd23b1bc9bed` |
 | track03.iso with `iplogo.mr` + `0GDTEX.PVR` (0.3.0) | `05ab2d08d33d637e8f73f971d8387af6321fe274` |
-| track04.iso (free play + P1 DMA buffers) | `27bc2a196964a9f131dec3229099f14118ee7e4e` |
+| track04.iso (free play + P1 DMA buffers + HOLD on C) | `46041d6cd9dddfed491f274510bd9bf05b9165cc` |
+| track04.iso (free play + P1 DMA buffers, 0.6.0) | `27bc2a196964a9f131dec3229099f14118ee7e4e` |
 | track04.iso (free play, 0.4.0–0.5.0) | `2718605b6947bad281ea81283212cccb1f29d534` |
 | track04.iso before free play (≤ 0.3.0) | `5c18e14e53b922e6abc57e84e0bf741dd76f0d0d` |
 
@@ -178,8 +200,8 @@ Before the title patch (up to tag 0.2.0) the three track03 rows were
 
 - Free play: no coins needed, Start starts. (Before free play, Y inserted a coin.)
 - Controls: lever/D-pad moves, up is hard drop; A and B rotate (opposite ways);
-  Y or R is HOLD. X, L, C and Z do nothing. A DC arcade stick (no triggers) has
-  every action (Flycast, 2026-10-10; `docs/kb/controls.md`).
+  Y, C or R is HOLD (C since the HOLD-on-C patch, for arcade sticks). X, L and Z do
+  nothing. On a DC arcade stick: A/B rotate, Y or C holds (Flycast; `docs/kb/controls.md`).
 - GDEMU/ODE: copy `build/gdi/` to the SD card. Run `dot_clean` on it first, since
   macOS `._*` files break GDEMU.
 - DreamShell (SD card on the serial port): copy `build/gdi/` to the SD card and
@@ -222,4 +244,5 @@ distributed. Tetris Kiwamemichi belongs to its rights holders.
 | DreamShell ISO Loader, SD on serial port, defaults (P1 DMA buffers) | ✅ Flycast fork with emulated SD + cache/MMU model, DreamShell's own `sd.bin`: without the patch it hangs, with it the game plays (2026-10-09); ✅ DreamShell on hardware — user report, 2026-10-10, 0.6.0 (before: black screen, no sound); ✅ GDEMU regression — user report, 2026-10-10 |
 | Free play (1-byte `1ST_READ.BIN` patch) | ✅ Flycast + real BIOS, stock-build control; ✅ GDEMU — user report, 2026-10-04 |
 | Arcade stick (no stuck input; every action reachable) | ✅ Flycast Arcade Stick, pad-identical shots and per-button map, 2026-10-10 (`docs/kb/controls.md`); ⬜ real stick on hardware |
+| HOLD on C (58-byte pd library patch) | ✅ Flycast Arcade Stick: C = Y on all 30 shots, GDI and CDI; pad legs unchanged, 2026-10-11; ✅ GDEMU with standard DC controllers, no regression — user report, 2026-10-11, 0.7.0; ⬜ real arcade stick (testers) |
 | Video output on hardware | ✅ VGA — the DreamShell rig (`docs/kb/dreamshell.md`); ✅ composite, runs without issues as on VGA — user report, 2026-10-10 |

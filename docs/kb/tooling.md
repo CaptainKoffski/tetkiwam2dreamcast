@@ -236,3 +236,33 @@ to override). ~15 s on an M1. Reference sha1s in the README.
   same. Leg runner, retries on the startup `Verify Failed` (§DreamShell
   tooling gotcha): session scratchpad only.
 - Results: `controls.md`.
+
+## HOLD on C tooling (2026-10-11)
+
+- **Fork hooks (fork commit `a62b33164` in `../flycast4naomi2dreamcast`, 2026-10-11):**
+  - `FLYCAST_RAMDUMP=<file>` + `FLYCAST_RAMDUMP_AT=<frame>` (`core/ui/gui.cpp`):
+    writes 16 MB of main RAM (from `0x0c000000`) at that frame. Two no-press legs
+    dumped at frame 5404 were byte-identical, so a diff against a pressed leg is
+    clean. The diff script was session scratchpad only: u32 compare, minus the
+    none-vs-none words.
+  - `FLYCAST_RDWATCH=<lo>,<hi>` (physical, hex; `core/hw/mem/addrspace.cpp`
+    `readt`): logs each distinct `(pa, pc, pr)` reading that range to the cartlog
+    as `RDWATCH`. Needs `FLYCAST_CARTLOG` and `-config config:Dynarec.Enabled=no`
+    (the dynarec reads RAM directly). Reaching the 1P match (frame ~5400) took
+    about 15 min.
+  - `FLYCAST_PEEK=<phys>[,<phys>…]` (`core/ui/gui.cpp`): logs `PEEK <addr> = <value>
+    @<frame>` whenever one of up to 8 RAM words changes. Dynarec is fine.
+- **Assembling a patch block:** `tools/hold_c.s` header has the recipe
+  (`sh-elf-as -little`, `sh-elf-objcopy -O binary -j .text`, take bytes 2..60).
+  The source starts 2 bytes early, at a 4-aligned address, so `mov.l @(disp,pc)`
+  encodes against the real alignment. Branch targets and literals outside the
+  block are local labels placed with `.org`, because GAS refuses external symbols
+  for 8/12-bit branch and literal displacements. Check the encoding with
+  `sh-elf-objdump --adjust-vma` on the patched track04 (branch targets and
+  `! 8c10663c` resolve).
+- **Old/new and control builds without touching `build/`:** copy `tetris.gdi` +
+  track01–03 to a scratch folder with another track04 (the pre-patch one, or a
+  variant with one instruction swapped for `nop`) and point the leg at it.
+- **Gotcha:** `make cdi` re-runs the GDI build, rewriting `build/gdi` under any
+  leg that's reading it. Run it between legs.
+- Results: `controls.md` §HOLD on C.
