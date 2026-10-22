@@ -254,6 +254,7 @@ to override). ~15 s on an M1. Reference sha1s in the README.
     @<frame>` whenever one of up to 8 RAM words changes. Dynarec is fine.
 - **Assembling a patch block:** `tools/hold_c.s` header has the recipe
   (`sh-elf-as -little`, `sh-elf-objcopy -O binary -j .text`, take bytes 2..60).
+  Renamed `tools/pd_update.s` for the soft reset (2026-10-15), bytes 2..104 since.
   The source starts 2 bytes early, at a 4-aligned address, so `mov.l @(disp,pc)`
   encodes against the real alignment. Branch targets and literals outside the
   block are local labels placed with `.org`, because GAS refuses external symbols
@@ -266,3 +267,39 @@ to override). ~15 s on an M1. Reference sha1s in the README.
 - **Gotcha:** `make cdi` re-runs the GDI build, rewriting `build/gdi` under any
   leg that's reading it. Run it between legs.
 - Results: `controls.md` §HOLD on C.
+
+## Soft reset tooling (2026-10-15..22)
+
+- **Gotcha: threaded rendering breaks frame-locked legs.** `emu.cfg` has
+  `rend.ThreadedRendering = yes`. With it, two identical legs drifted apart at the
+  play-style menu (frame 2640), about a second of game timer apart. With
+  `-config config:rend.ThreadedRendering=no`, two parallel legs are identical 36/36,
+  and so are legs launched minutes apart. Every leg in `controls.md` §Soft reset uses it.
+- **Strict build lagging the hooks:** `build-strict/` was built before fork commit
+  `3d5047025`, so `START_AT` masks were ignored (a bare Start). `cmake --build
+  build-strict -j8` (4 s) brought it up to date. Check with `strings … | grep
+  FLYCAST_PEEK`.
+- **Combo leg:** `FLYCAST_START_AT=…,5400:60e` (A 4 + B 2 + X 400 + Y 200 + Start 8).
+  The BIOS menu is PVR-rendered, so `FLYCAST_SHOT` captures it. In the BIOS menu,
+  a Start press boots the disc again (log: `CLEO-CCR … pc=ac008300`). For a strict
+  leg that should stay on the menu, schedule only the Start at 1800 (title) and the combo.
+- **`FLYCAST_SHOT_RAWFB` is blind to PVR-rendered screens:** Flycast doesn't write
+  rendered frames back to guest VRAM, so game and DreamShell GUI dumps come out black.
+  It only shows framebuffer-drawn screens (BIOS license, isoldr's loader text).
+- **DreamShell exit kit** (§DreamShell tooling, plus):
+  - The SD card also carries `/DS/DS_CORE.BIN` (= `EMU_DS_CORE.BIN`), the file
+    isoldr's `menu_exit` reloads (`firmware/isoldr/loader/utils.c:257`).
+  - `mkdcdisc -N` (no padding) gives a 211 MB test CDI that boots the same way.
+  - One SD image + one CDI per build under test.
+  - Restart signs in the log: a second KOS build banner (`…/kos/kos`) and
+    `SDCMD 0` lines in the cartlog.
+- **Control program for isoldr's exit:** 10 instructions, `1ST_READ.BIN` at
+  `0x8c010000`: `mov.l delay,r1; 1: dt r1; bf 1b; mov.l misc,r0; mov.l @r0,r0; jmp @r0;
+  mov #1,r4`, with `delay = 0x0c000000` (~3 s) and `misc = 0x8c0000e0`. Assemble it
+  like `tools/pd_update.s`, then `mkdcdisc -N -b exit.bin -n EXITTEST -o exit.cdi`
+  (1.5 MB). From the real BIOS it lands in the BIOS menu. Session scratchpad only;
+  rebuild from this description.
+- **Leg runner** (session scratchpad): `leg.py NAME DISC DEVICE EXTRA [SECS]
+  [KEY=VAL…]`, which wraps the §Controls launch with threaded rendering off and retries
+  on `Verify Failed`. `same.sh A B` counts identical frame-named shots.
+- Results: `controls.md` §Soft reset.

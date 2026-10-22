@@ -47,7 +47,7 @@ verify:
 	  5cf394175d4caad3b37b8f4ec213cb7b81d9a71f track01.bin \
 	  6030e25dac2e9c0237aaf908b5037ee16503e0c0 track02.raw \
 	  05ab2d08d33d637e8f73f971d8387af6321fe274 track03.iso \
-	  46041d6cd9dddfed491f274510bd9bf05b9165cc track04.iso | shasum -c
+	  f0898932d8bcc3a2aa0658b3ee78c218d53bd3ae track04.iso | shasum -c
 
 release: gdi cdi
 	rm -rf "$(ZIP)" "build/release/$(GAMEDIR)"

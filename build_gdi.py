@@ -78,24 +78,33 @@ DMAMASK = 0x8c010508 - 0x8c010000
 assert boot[DMAMASK:DMAMASK + 4] == b"\xff\xff\xff\x1f", "unexpected 1ST_READ.BIN at the gdc DMA mask"
 boot = boot[:DMAMASK + 3] + b"\xff" + boot[DMAMASK + 4:]
 
-# HOLD on C, for arcade sticks (docs/kb/controls.md). The game's HOLD check
+# HOLD on C and soft reset (docs/kb/controls.md). The game's HOLD check
 # (0x8c0d385c) tests the press counters of only two action slots, 16 (R) and 9 (Y),
 # and a stick has no R. So C (bit 0, otherwise unused) is made a copy of Y (bit 9)
 # inside Sega's pd library, in its per-port loop (0x8c01341e), right after the
 # decoder fills `on` and before off/press/release are derived from it:
 # on |= (on & 1) << 9. Y's bit is in the stick's capability word (0x7ff), so the
 # library keeps it; a standard pad has no C, so pads are unchanged. Only the
-# positive-logic path (the game's mode, flag 0x8c10663c = 0) is aliased; the
-# negative-logic path still branches off unchanged. The rewrite is the same 58 bytes:
-# the original reloads @r15 before every access, and the space that frees holds the
-# alias. Assembled with sh-elf-as (docs/kb/tooling.md §HOLD on C).
-CHOLD = 0x8c01341e - 0x8c010000
-assert boot[CHOLD:CHOLD + 58] == bytes.fromhex(
+# positive-logic path (the game's mode, flag 0x8c10663c = 0) is aliased.
+# Soft reset, in the same block: A+B+X+Y+Start held on any port (raw `on`, before the
+# alias) masks interrupts (as the game's own exit call at 0x8c0729fc does), turns the
+# MMU off (MMUCR = 4; the game turns it on, and DreamShell's ISO Loader catches this
+# exit and reloads DreamShell without turning it off), then jumps to the game's own exit
+# routine (0x8c01c454: misc syscall 0x8c0000e0 with r4 = 1, BIOS menu). The original
+# reloads @r15 before every access; the rewrite of both logic paths (the negative one
+# to the same press/release) frees the room, 102 bytes up to the loop's join at
+# 0x8c013484. Source: tools/pd_update.s (docs/kb/tooling.md §HOLD on C).
+PDUPD = 0x8c01341e - 0x8c010000
+assert boot[PDUPD:PDUPD + 102] == bytes.fromhex(
     "f262f26332511761131219d222633823138bf263f2611b5132531a23331ff261"
-    "f2633253f35039200411f263f2611351f3501920051316a00900"), "unexpected 1ST_READ.BIN at the pd update"
-boot = boot[:CHOLD] + bytes.fromhex(
-    "f2622251176333121ad002600820148b136001c9184000400b21121217633312"
-    "2b501a20031f0364192004123924451219a00900090009000900") + boot[CHOLD + 58:]
+    "f2633253f35039200411f263f2611351f3501920051316a00900f261f2633b53"
+    "12513a21131fffe3f3503a20031ff261f2622252f3502b200411f262f2611351"
+    "f3501b200512"), "unexpected 1ST_READ.BIN at the pd update"
+boot = boot[:PDUPD] + bytes.fromhex(
+    "f2622251176333121ad002600820228b33600ec8028b194006c80f89136001c9"
+    "184000400b211212176333122b501a20036419200412392415a045120200f0cb"
+    "0e4003d104e0022101d02b40090054c4018c100000ff2b501a20076003641b20"
+    "04123b244512") + boot[PDUPD + 102:]
 
 # Disc art: the DC BIOS disc menu and GDEMU's menu draw the root-dir 0GDTEX.PVR
 # (shipped here as Sega's leftover "Pokekano" CD picture: GBIX+PVRT header,

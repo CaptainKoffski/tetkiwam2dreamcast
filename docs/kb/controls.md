@@ -146,3 +146,85 @@ free play that has no visible effect (not checked in a leg).
 **Hardware (2026-10-11):** GDEMU with standard DC controllers, "no regression
 found" (user report). Real arcade stick: not yet, owed to the user's testers.
 Release 0.7.0.
+
+## Soft reset (2026-10-15..22)
+
+**Ask:** A+B+X+Y+Start returns to the Dreamcast BIOS menu.
+
+**What the game has.** No soft reset. Nothing in `1ST_READ.BIN` tests the
+five-button mask (`0x60e`), and on 0.7.0 the combo held in a 1P match changes
+nothing. The game does carry an exit routine at `0x8c01c454`, library code next to
+its BIOS syscall wrappers (`0x8c01c428`–`0x8c01c450`). Unless the IP.BIN byte at
+`0x8c0080fc` is 1 (then `0x8c0080fe` = 1 jumps to the bootstrap at `0x8c008300`, and
+anything else calls misc r4 = 3), it calls the misc syscall vector `0x8c0000e0` with
+r4 = 1, "Exit to BIOS menu" (Flycast `core/reios/reios.cpp:360`). On this disc that
+byte is `0x20`, a space in the title field, so it's r4 = 1. Two callers, both in what
+looks like debug-window code: `0x8c0676c2`, and `0x8c072a06` (message 17, which first
+raises IMASK to 15).
+
+**Patch (`build_gdi.py`, source `tools/pd_update.s`, renamed from `hold_c.s`).** The
+same pd per-port block as §HOLD on C, now 102 bytes (`0x8c01341e`–`0x8c013483`, up
+to the loop's join at `0x8c013484`). After the positive-logic flag check, the raw `on`
+word (before the C alias, so C doesn't stand in for Y) is tested for B, A, Start
+(`tst #0x0e` on `~on`), then Y, X (`shlr8`, `tst #0x06`). With all five held:
+IMASK = 15 (as the game's own call at `0x8c0729fc`), `MMUCR = 4` (TI: TLB
+invalidated; AT = 0: MMU off), then a jump to `0x8c01c454`.
+- Room: the negative-logic path (never taken here, §HOLD on C) is rewritten to the
+  same press/release in 8 instructions, and the stack scratch word `@(12,r15)` is
+  no longer written. Only this block ever touched it (function `0x8c013388`–`0x8c0134bc`).
+- Only the block's own two branches target `0x8c013458`–`0x8c013483`, and no word
+  in the file points into it.
+- Why the MMU goes off: DreamShell, below.
+- track04 `f0898932…`, which differs from 0.7.0 in `0x342c`–`0x3482` only. track01–03
+  and `.gdi` are unchanged.
+
+**Under DreamShell's ISO Loader.** isoldr redirects the misc syscall vector
+(`firmware/isoldr/loader/menu_syscall.s`: `0xac0000e0` → `menu_redir`). r4 = 1 goes
+to `menu_exit()` (`syscalls.c:1511`), which reloads DreamShell from `/DS/DS_CORE.BIN`
+on the loader's device, the SD here (`utils.c:257`), or starts the BIOS ROM if that
+file is missing. isoldr clears bit `0x20` of IP.BIN `0xfc` on start (`main.c:182`), so
+the game's exit still takes r4 = 1. It never turns the MMU off on that path
+(`loader/mmu.c` `mmu_disable()` has no caller). This game turns it on (`MMUCR =
+0x40005` at `0x8c015830`). The game's own library shutdown would turn it off
+(`0x8c016e24` → `0x8c015912`, `MMUCR = 0`), but nothing references its wrapper
+`0x8c016f70`.
+
+Emulator legs (fork + SD model, §DreamShell tooling; combo at frame 6000, in a match):
+
+| leg | after the combo |
+|---|---|
+| first build, no MMU off | DreamShell's KOS banner, then `Enabling on-demand Full MMU support`, and Flycast stops: `Fatal: SH4 exception when blocked` |
+| shipped build (MMU off) | DreamShell's KOS banner, video set up, no fatal. Then black and no more SD commands: its autostart doesn't relaunch the game |
+| control: a 10-instruction program that waits ~3 s and calls misc r4 = 1, MMU never touched | the same writes as the shipped build, then black, no relaunch |
+| the same control program, real BIOS, no DreamShell | BIOS menu |
+| the game with its `MMUCR = 0x40005` store a `nop` | not usable: the game never starts under isoldr ("Executing…") |
+
+With the MMU off, the game leaves isoldr's exit in the same state as a program that
+never touched the MMU. Without it, DreamShell's restart takes an exception while
+`SR.BL` = 1 (isoldr's `menu_reboot` loads SR `0x700000f0`), which Flycast treats as
+fatal (`core/hw/sh4/sh4_interrupts.cpp:204`). That's right after a TLB entry is
+loaded with `MMUCR.AT` still 1 (`core/hw/sh4/modules/fastmmu.cpp:200`). What happens
+after DreamShell restarts can't be judged in this rig, since even the clean control
+goes black. Real hardware decides.
+
+**Checks (Flycast fork, real BIOS, frame-locked legs, threaded rendering off; shipped
+build unless noted):**
+
+| leg | compared with | result |
+|---|---|---|
+| 0.7.0, pad, combo at 5400 | — | the match goes on (the failing test) |
+| pad, combo at 5400 | pad, no press | identical up to the combo, then the BIOS menu |
+| stick, combo at 5400 | — | BIOS menu |
+| pad, A+B+X+Y at 5400, A+B+X+Start at 6300 | pad, no press | the match goes on; differs from 5520 (Y is HOLD) |
+| pad, combo on the title (1950), Start at 2100 | — | exit, then the Start boots the disc again (bootstrap `ac008300`), back to a match |
+| CDI, pad, combo at 5400 | — | BIOS menu |
+| strict (cache/MMU) build, combo on the title, no later presses | — | BIOS menu, still animating at frame 5280; no exceptions |
+| pad, no press | 0.7.0, pad, no press | identical 36/36 |
+| stick, no press | 0.7.0, stick, no press | identical 36/36 |
+| stick, C at 5400/6300 | stick, Y at 5400/6300 | identical 36/36 |
+
+**Not checked:** ports B–D (the fork drives controller 1 only; the patch runs the same
+code for every port record); menus other than the title; any real hardware (GDEMU,
+DreamShell).
+
+Release 0.8.0 (emulator-verified; GDEMU and DreamShell owed).

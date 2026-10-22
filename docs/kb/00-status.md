@@ -1,6 +1,6 @@
 # Project status
 
-**Updated:** 2026-10-11 — Release 0.7.0: HOLD on C for arcade sticks (C gives the same frames as Y in Flycast's Arcade Stick; standard pads show no regression on GDEMU, user report; real stick owed to testers); before that, Release 0.6.0: runs from DreamShell's ISO Loader on an SD card (DMA reads pass a P1 buffer address; the game runs with the MMU on), DreamShell-verified; before that,
+**Updated:** 2026-10-23 — Release 0.8.0: soft reset (A+B+X+Y+Start → BIOS menu), emulator-verified; hardware owed (GDEMU, DreamShell); before that, Release 0.7.0: HOLD on C for arcade sticks (C gives the same frames as Y in Flycast's Arcade Stick; standard pads show no regression on GDEMU, user report; real stick owed to testers); before that, Release 0.6.0: runs from DreamShell's ISO Loader on an SD card (DMA reads pass a P1 buffer address; the game runs with the MMU on), DreamShell-verified; before that,
 Release 0.5.0: CDI next to the GDI, plays on GDEMU; CD-R burn owed (see below). **Release 0.5.0 (tag, on `main`): the shipped
 Dreamcast build of Tetris Kiwamemichi boots on real hardware (GDEMU) with
 the NAOMI GD-ROM SYSTEM logo on the SEGA TM screen, the Tetris cover
@@ -13,6 +13,21 @@ build; we decrypt it, relocate `1ST_READ.BIN` to a last data track,
 own free-play flag (one byte in `1ST_READ.BIN`); (0.5.0) the CDI re-masters
 that build for CD-R with three CD-only patches. Honest limit: single-rig evidence —
 one console, one GDEMU, one user report per round.
+
+**SOFT RESET (2026-10-15..22): A+B+X+Y+Start → BIOS menu. Release 0.8.0,
+emulator-verified; GDEMU and DreamShell owed.** The game had none. The pd block from HOLD on C
+grows to 102 bytes (`tools/pd_update.s`). With all five held on any port it masks
+interrupts, turns the MMU off and jumps to the game's own exit routine (`0x8c01c454`,
+misc syscall r4 = 1). Flycast fork, real BIOS: BIOS menu from a match and from the
+title, pad and Arcade Stick, GDI and CDI, strict cache/MMU build. Near misses don't
+reset, and the no-press and C = Y legs are identical to 0.7.0. The MMU step is for
+DreamShell. isoldr catches the exit and reloads DreamShell without turning off the
+MMU the game turned on, and that reload crashed the emulator. With the step, the
+game's exit matches a minimal test program's exit write for write, but the emulated
+rig can't show what DreamShell does next: the control goes black too. New tooling
+gotcha: threaded rendering made frame-locked legs drift; all legs now run with it
+off. track04 `f0898932…`; track01–03/.gdi unchanged. Full record: `controls.md`
+§Soft reset.
 
 **COMPOSITE VIDEO WORKS (2026-10-10, user report: runs without issues on
 composite, just like on VGA).** No change needed; README Status has the row.
