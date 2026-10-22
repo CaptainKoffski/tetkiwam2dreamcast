@@ -224,7 +224,9 @@ build unless noted):**
 | stick, C at 5400/6300 | stick, Y at 5400/6300 | identical 36/36 |
 
 **Not checked:** ports B–D (the fork drives controller 1 only; the patch runs the same
-code for every port record); menus other than the title; any real hardware (GDEMU,
-DreamShell).
+code for every port record); menus other than the title; a real arcade stick.
 
-Release 0.8.0 (emulator-verified; GDEMU and DreamShell owed).
+**Hardware (2026-10-23):** GDEMU and DreamShell's ISO Loader: "works properly"
+(user report, 2026-10-23). From DreamShell the combo goes back to DreamShell, as isoldr's
+`menu_exit` predicts.
+Release 0.8.0.

@@ -193,7 +193,8 @@ the same result in fewer instructions to make room (102 bytes in all,
   MMU step, that reload crashed the emulator. With it, the game's exit matches a minimal
   test program's exit write for write. What DreamShell then shows can't be judged in the
   emulator (the test program's reload also goes black), so that's for real hardware.
-Real hardware hasn't been tried yet. Details: `docs/kb/controls.md` §Soft reset.
+On real hardware it "works properly" on GDEMU and from DreamShell's ISO Loader
+(user report, 2026-10-23, 0.8.0). Details: `docs/kb/controls.md` §Soft reset.
 
 Reference SHA1s of a verified build:
 
@@ -221,7 +222,7 @@ Before the title patch (up to tag 0.2.0) the three track03 rows were
   Y, C or R is HOLD (C since the HOLD-on-C patch, for arcade sticks). X, L and Z do
   nothing. On a DC arcade stick: A/B rotate, Y or C holds (Flycast; `docs/kb/controls.md`).
 - Soft reset: hold A+B+X+Y+Start to exit to the Dreamcast BIOS menu (under DreamShell's
-  ISO Loader, DreamShell reloads instead; untested on hardware).
+  ISO Loader, DreamShell reloads instead). Works on GDEMU and DreamShell (user report, 2026-10-23).
 - GDEMU/ODE: copy `build/gdi/` to the SD card. Run `dot_clean` on it first, since
   macOS `._*` files break GDEMU.
 - DreamShell (SD card on the serial port): copy `build/gdi/` to the SD card and
@@ -266,5 +267,5 @@ distributed. Tetris Kiwamemichi belongs to its rights holders.
 | Free play (1-byte `1ST_READ.BIN` patch) | ✅ Flycast + real BIOS, stock-build control; ✅ GDEMU — user report, 2026-10-04 |
 | Arcade stick (no stuck input; every action reachable) | ✅ Flycast Arcade Stick, pad-identical shots and per-button map, 2026-10-10 (`docs/kb/controls.md`); ⬜ real stick on hardware |
 | HOLD on C (58-byte pd library patch) | ✅ Flycast Arcade Stick: C = Y on all 30 shots, GDI and CDI; pad legs unchanged, 2026-10-11; ✅ GDEMU with standard DC controllers, no regression — user report, 2026-10-11, 0.7.0; ⬜ real arcade stick (testers) |
-| Soft reset, A+B+X+Y+Start → BIOS menu (102-byte pd patch) | ✅ Flycast fork, real BIOS: pad and Arcade Stick, match and title, GDI and CDI, strict cache/MMU build; near misses don't reset; no-press and C = Y legs identical to 0.7.0, 2026-10-15..22; ⬜ GDEMU; ⬜ DreamShell ISO Loader (reloads DreamShell; emulator can't show the result) |
+| Soft reset, A+B+X+Y+Start → BIOS menu (102-byte pd patch) | ✅ Flycast fork, real BIOS: pad and Arcade Stick, match and title, GDI and CDI, strict cache/MMU build; near misses don't reset; no-press and C = Y legs identical to 0.7.0, 2026-10-15..22; ✅ GDEMU and ✅ DreamShell ISO Loader (back to DreamShell), "works properly" — user report, 2026-10-23, 0.8.0 |
 | Video output on hardware | ✅ VGA — the DreamShell rig (`docs/kb/dreamshell.md`); ✅ composite, runs without issues as on VGA — user report, 2026-10-10 |
