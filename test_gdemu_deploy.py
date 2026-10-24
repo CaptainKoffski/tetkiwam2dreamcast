@@ -59,8 +59,8 @@ with tempfile.TemporaryDirectory() as t:
     gdi(f"{card}/02", b"T0000M", b"o")                       # Katana-style bare name
     put(f"{card}/02/name.txt", b"Game")
     put(f"{card}/02/katana.sha", b"stale")
-    put(f"{card}/03/other.cdi", ip(b"OTHER") * 2)
-    put(f"{card}/03/name.txt", b"Other [CDI]")
+    put(f"{card}/04/other.cdi", ip(b"OTHER") * 2)              # 03 free: GDEMU hides folders past a gap
+    put(f"{card}/04/name.txt", b"Other [CDI]")
     gdi(src, b"T0000M", b"n")
     put(f"{src}/game.cdi", b"\0" * 4096 + ip(b"T0000M"))
 
@@ -68,12 +68,12 @@ with tempfile.TemporaryDirectory() as t:
     assert sorted(os.listdir(f"{card}/02")) == ["game.gdi", "name.txt", "serial.txt", "track01.bin", "track03.iso"]
     assert open(f"{card}/02/track03.iso", "rb").read() == open(f"{src}/track03.iso", "rb").read()
     assert open(f"{card}/02/name.txt").read() == "Game [GDI]"
-    assert open(f"{card}/04/name.txt").read() == "Game [CDI]" and os.path.exists(f"{card}/04/game.cdi")
+    assert open(f"{card}/03/name.txt").read() == "Game [CDI]" and os.path.exists(f"{card}/03/game.cdi")
     first, size = menu_list(card), sizes(card)
     assert iso_file(card, "track01.iso", "0", "ZZZ.TXT") == "after the list"
     assert first == ("[GDMENU]\n" + "".join(f"{n}.name={x}\n{n}.disc=1/1\n{n}.vga=1\n{n}.region=J\n"
                      f"{n}.version=V1.000\n{n}.date=20261024\n\n" for n, x in
-                     [("01", "GDMENU"), ("02", "Game [GDI]"), ("03", "Other [CDI]"), ("04", "Game [CDI]")])), first
+                     [("01", "GDMENU"), ("02", "Game [GDI]"), ("03", "Game [CDI]"), ("04", "Other [CDI]")])), first
 
     deploy(card, src)                                         # redeploy: same slots, same sectors
     assert sorted(os.listdir(card)) == ["01", "02", "03", "04"]

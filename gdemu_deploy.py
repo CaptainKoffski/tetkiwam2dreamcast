@@ -132,7 +132,10 @@ def deploy(card, name, img):
                     os.remove(os.path.join(slot, f))
         print(f"update {slot}")
     else:
-        slot = os.path.join(card, f"{max(int(os.path.basename(d)) for d in slots) + 1:02d}")
+        # GDEMU hides every folder past a gap in the numbering (hardware, user
+        # report 2026-10-24), so fill the first hole rather than append.
+        used = {int(os.path.basename(d)) for d in slots}
+        slot = os.path.join(card, f"{min(set(range(1, len(used) + 2)) - used):02d}")
         os.mkdir(slot)
         print(f"create {slot}")
     for f in image_files(img):
