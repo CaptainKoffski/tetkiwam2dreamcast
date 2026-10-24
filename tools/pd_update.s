@@ -4,11 +4,13 @@
 !   exit call at 0x8c0729fc does), turns the MMU off (the game turns it on; DreamShell's
 !   ISO Loader catches the exit and reloads DreamShell without turning it off), then jumps
 !   to the game's own exit routine (0x8c01c454; BIOS menu).
-! - HOLD on C: the arcade stick's C (bit 0) becomes a copy of Y (bit 9, HOLD) before
-!   off/press/release are derived.
-! The negative-logic path (not taken by this game) is rewritten to the same press/release
-! in fewer instructions, and the stack scratch word @(12,r15), which nothing outside this
-! block reads, is no longer written: that makes the room. build_gdi.py carries the bytes;
+! - HOLD on X and C: Y's bit (9, HOLD) is also set while X (bit 10; the pad's
+!   3-button layout) or the arcade stick's C (bit 0) is held, before off/press/release
+!   are derived.
+! Both logic paths compute the same press/release in fewer instructions (press/release
+! from on and prev directly, without the changed-bits word; the negative-logic path is
+! not taken by this game), and the stack scratch word @(12,r15), which nothing outside
+! this block reads, is no longer written: that makes the room. build_gdi.py carries the bytes;
 ! this is their source. Rebuild and print them:
 !   B=/opt/toolchains/dc/sh-elf/bin
 !   $B/sh-elf-as -little tools/pd_update.s -o /tmp/pd_update.o
@@ -36,21 +38,23 @@ _start:
 	bt	reset
 alias:
 	mov	r1,r0
-	and	#1,r0		! C (PDD_DGT_TC)
+	shlr8	r0
+	shlr2	r0		! bit 0 = X (PDD_DGT_TX, bit 10)
+	or	r1,r0		! bit 0 = X | C (PDD_DGT_TC)
+	and	#1,r0
 	shll8	r0
 	shll	r0		! -> bit 9, Y (PDD_DGT_TY)
 	or	r0,r1
-	mov.l	r1,@(8,r2)	! on |= C << 9
+	mov.l	r1,@(8,r2)	! on |= (X | C) << 9
 	not	r1,r3
 	mov.l	r3,@(12,r2)	! off = ~on
-	mov.l	@(44,r2),r0	! previous on
-	xor	r1,r0		! changed bits
-	mov	r0,r4
+	mov.l	@(44,r2),r4	! previous on
+	not	r4,r0
 	and	r1,r0
-	mov.l	r0,@(16,r2)	! press = changed & on
+	mov.l	r0,@(16,r2)	! press = on & ~prev (= (on ^ prev) & on)
 	and	r3,r4
 	bra	join
-	mov.l	r4,@(20,r2)	! release = changed & off
+	mov.l	r4,@(20,r2)	! release = off & prev (= (on ^ prev) & off)
 reset:
 	stc	sr,r0
 	or	#0xf0,r0	! IMASK = 15
@@ -64,11 +68,9 @@ reset:
 	.align	2
 exitp:	.long	0x8c01c454
 mmucr:	.long	0xff000010
-neg:				! t = ~(on ^ prev); press = t | on; release = t | off
-	mov.l	@(44,r2),r0
-	xor	r1,r0
-	not	r0,r0
-	mov	r0,r4
+neg:				! t = ~(on ^ prev); press = t | on = on | ~prev; release = t | off = off | prev
+	mov.l	@(44,r2),r4
+	not	r4,r0
 	or	r1,r0
 	mov.l	r0,@(16,r2)
 	or	r3,r4

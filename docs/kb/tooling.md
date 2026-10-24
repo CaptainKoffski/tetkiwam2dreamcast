@@ -303,3 +303,11 @@ to override). ~15 s on an M1. Reference sha1s in the README.
   [KEY=VAL…]`, which wraps the §Controls launch with threaded rendering off and retries
   on `Verify Failed`. `same.sh A B` counts identical frame-named shots.
 - Results: `controls.md` §Soft reset.
+
+## HOLD on X tooling (2026-10-24)
+
+- Legs ran with `FLYCAST_HEADLESS=1`, four in parallel. A second startup flake
+  besides `Verify Failed`: `Fatal: SH4 exception when blocked` inside the BIOS boot
+  (pc `8c00b9xx`, before any game code), no shots. Relaunch; the session's runner
+  now retries on fewer than 20 shots as well.
+- Results: `controls.md` §HOLD on X.

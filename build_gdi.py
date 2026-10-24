@@ -78,21 +78,23 @@ DMAMASK = 0x8c010508 - 0x8c010000
 assert boot[DMAMASK:DMAMASK + 4] == b"\xff\xff\xff\x1f", "unexpected 1ST_READ.BIN at the gdc DMA mask"
 boot = boot[:DMAMASK + 3] + b"\xff" + boot[DMAMASK + 4:]
 
-# HOLD on C and soft reset (docs/kb/controls.md). The game's HOLD check
+# HOLD on X and C, and soft reset (docs/kb/controls.md). The game's HOLD check
 # (0x8c0d385c) tests the press counters of only two action slots, 16 (R) and 9 (Y),
-# and a stick has no R. So C (bit 0, otherwise unused) is made a copy of Y (bit 9)
-# inside Sega's pd library, in its per-port loop (0x8c01341e), right after the
-# decoder fills `on` and before off/press/release are derived from it:
-# on |= (on & 1) << 9. Y's bit is in the stick's capability word (0x7ff), so the
-# library keeps it; a standard pad has no C, so pads are unchanged. Only the
+# and a stick has no R. So Y's bit (9) is also set while X (bit 10, otherwise unused;
+# A/B/X is the usual 3-button layout) or C (bit 0, the stick's bottom row) is held,
+# inside Sega's pd library, in its per-port loop (0x8c01341e), right after the decoder
+# fills `on` and before off/press/release are derived from it:
+# on |= ((on >> 10 | on) & 1) << 9. Y's bit is in both capability words (stick 0x7ff,
+# pad 0xf06fe), so the library keeps it; Y and R still hold too. Only the
 # positive-logic path (the game's mode, flag 0x8c10663c = 0) is aliased.
 # Soft reset, in the same block: A+B+X+Y+Start held on any port (raw `on`, before the
 # alias) masks interrupts (as the game's own exit call at 0x8c0729fc does), turns the
 # MMU off (MMUCR = 4; the game turns it on, and DreamShell's ISO Loader catches this
 # exit and reloads DreamShell without turning it off), then jumps to the game's own exit
 # routine (0x8c01c454: misc syscall 0x8c0000e0 with r4 = 1, BIOS menu). The original
-# reloads @r15 before every access; the rewrite of both logic paths (the negative one
-# to the same press/release) frees the room, 102 bytes up to the loop's join at
+# reloads @r15 before every access; the rewrite of both logic paths to the same
+# press/release (on & ~prev / off & prev, and on | ~prev / off | prev on the negative
+# one, instead of going through on ^ prev) frees the room, 102 bytes up to the loop's join at
 # 0x8c013484. Source: tools/pd_update.s (docs/kb/tooling.md §HOLD on C).
 PDUPD = 0x8c01341e - 0x8c010000
 assert boot[PDUPD:PDUPD + 102] == bytes.fromhex(
@@ -101,10 +103,9 @@ assert boot[PDUPD:PDUPD + 102] == bytes.fromhex(
     "12513a21131fffe3f3503a20031ff261f2622252f3502b200411f262f2611351"
     "f3501b200512"), "unexpected 1ST_READ.BIN at the pd update"
 boot = boot[:PDUPD] + bytes.fromhex(
-    "f2622251176333121ad002600820228b33600ec8028b194006c80f89136001c9"
-    "184000400b211212176333122b501a20036419200412392415a045120200f0cb"
-    "0e4003d104e0022101d02b40090054c4018c100000ff2b501a20076003641b20"
-    "04123b244512") + boot[PDUPD + 102:]
+    "f2622251176333121ad002600820248b33600ec8028b194006c811891360194009401b2001c9"
+    "184000400b211212176333122b54476019200412392413a045120200f0cb0e4003d104e002"
+    "2101d02b40090054c4018c100000ff2b5447601b2004123b244512") + boot[PDUPD + 102:]
 
 # Disc art: the DC BIOS disc menu and GDEMU's menu draw the root-dir 0GDTEX.PVR
 # (shipped here as Sega's leftover "Pokekano" CD picture: GBIX+PVRT header,

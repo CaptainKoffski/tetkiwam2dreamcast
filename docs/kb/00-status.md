@@ -1,6 +1,6 @@
 # Project status
 
-**Updated:** 2026-10-23 — Release 0.8.0: soft reset (A+B+X+Y+Start → BIOS menu), works on GDEMU and DreamShell (user report, 2026-10-23); before that, Release 0.7.0: HOLD on C for arcade sticks (C gives the same frames as Y in Flycast's Arcade Stick; standard pads show no regression on GDEMU, user report; real stick owed to testers); before that, Release 0.6.0: runs from DreamShell's ISO Loader on an SD card (DMA reads pass a P1 buffer address; the game runs with the MMU on), DreamShell-verified; before that,
+**Updated:** 2026-10-24 — branch `hold-on-x`: HOLD on X too (tester request; Flycast-verified, hardware owed); before that, Release 0.8.0: soft reset (A+B+X+Y+Start → BIOS menu), works on GDEMU and DreamShell (user report, 2026-10-23); before that, Release 0.7.0: HOLD on C for arcade sticks (C gives the same frames as Y in Flycast's Arcade Stick; standard pads show no regression on GDEMU, user report; real stick owed to testers); before that, Release 0.6.0: runs from DreamShell's ISO Loader on an SD card (DMA reads pass a P1 buffer address; the game runs with the MMU on), DreamShell-verified; before that,
 Release 0.5.0: CDI next to the GDI, plays on GDEMU; CD-R burn owed (see below). **Release 0.5.0 (tag, on `main`): the shipped
 Dreamcast build of Tetris Kiwamemichi boots on real hardware (GDEMU) with
 the NAOMI GD-ROM SYSTEM logo on the SEGA TM screen, the Tetris cover
@@ -13,6 +13,13 @@ build; we decrypt it, relocate `1ST_READ.BIN` to a last data track,
 own free-play flag (one byte in `1ST_READ.BIN`); (0.5.0) the CDI re-masters
 that build for CD-R with three CD-only patches. Honest limit: single-rig evidence —
 one console, one GDEMU, one user report per round.
+
+**HOLD ON X (2026-10-24), branch `hold-on-x`; hardware owed.** A tester asked for
+HOLD on X (A/B/X three-button layout). The pd block's alias now sets Y's bit for X
+or C; Y and R still hold. The 6 bytes it needed come from deriving press/release
+without the changed-bits word. Flycast fork: X = Y 33/33 on GDI and CDI, no-press
+identical to 0.8.0, R and stick C unchanged, combo still exits. track04 `2cd9232b…`.
+Full record: `controls.md` §HOLD on X.
 
 **SOFT RESET (2026-10-15..23): A+B+X+Y+Start → BIOS menu. Release 0.8.0; GDEMU and
 DreamShell: "works properly", DreamShell's goes back to DreamShell (user report, 2026-10-23).** The game had none. The pd block from HOLD on C

@@ -65,7 +65,7 @@ first press is identical to the no-press leg.
 | B | rotate the other way (from the same spot, A and B leave the I and the Z one column apart) | ✅ |
 | Y | HOLD (the falling piece goes to the HOLD box) | ✅ |
 | R trigger (pad) | HOLD, pixel-identical to the Y leg | — (Y does it) |
-| X, L trigger, Z | nothing: identical to the no-press leg | — |
+| X, L trigger, Z | nothing: identical to the no-press leg (X holds since §HOLD on X) | — |
 | C | nothing in this build; HOLD since the 2026-10-11 patch (§HOLD on C) | ✅ (since the patch) |
 | Start | title and menus (every leg reached the match on Start alone) | ✅ |
 
@@ -230,3 +230,40 @@ code for every port record); menus other than the title; a real arcade stick.
 (user report, 2026-10-23). From DreamShell the combo goes back to DreamShell, as isoldr's
 `menu_exit` predicts.
 Release 0.8.0.
+
+## HOLD on X (2026-10-24)
+
+**Ask (a tester):** HOLD on X, so the pad has the usual three-button layout: A/B
+rotate, X holds. ("Instead of Y / trigger": Y and R are kept as well, so nobody's
+existing layout breaks.)
+
+**Patch (`tools/pd_update.s`, same block as §HOLD on C and §Soft reset).** The alias
+becomes `on |= ((on >> 10 | on) & 1) << 9`: Y's bit is set while X (bit 10) or C
+(bit 0) is held. X is in both capability words (pad `0xf06fe`, stick `0x7ff`), so
+the library keeps it. X's own slot (10) keeps its bit; it did nothing in a match.
+The soft-reset test still reads the raw `on`, before the alias.
+- Room: three more instructions (6 bytes), and the block was full. Both logic paths
+  now derive press/release without the changed-bits word: `(on ^ prev) & on` =
+  `on & ~prev`, `(on ^ prev) & off` = `off & prev`, and on the negative path
+  `~(on ^ prev) | on` = `on | ~prev`, `~(on ^ prev) | off` = `off | prev`. That's one
+  instruction less on the positive path and two on the negative. Registers at the join
+  are as before: r0 = press, r3 = off, r4 = release.
+- Still 102 bytes, `0x8c01341e`–`0x8c013483`. track04 `2cd9232b…`, differing from
+  0.8.0 inside the block only; track01–03 and `.gdi` unchanged.
+
+**Checks (Flycast fork, real BIOS, frame-locked legs, threaded rendering off,
+headless):**
+
+| leg | compared with | result |
+|---|---|---|
+| pad, X at 5400/6300 | pad, Y at 5400/6300 | identical 33/33 |
+| pad, X at 5400/6300 | pad, no press | differs from 5520 (the I piece goes to HOLD) |
+| 0.8.0, pad, X at 5400/6300 | 0.8.0, pad, no press | identical 33/33 (X did nothing) |
+| pad, no press | 0.8.0, pad, no press | identical 33/33 |
+| pad, R at 5400/6300 | pad, Y at 5400/6300 | identical 33/33 |
+| stick, C at 5400/6300 | stick, Y at 5400/6300 | identical 33/33 |
+| CDI, pad, X | CDI, pad, Y | identical 33/33 |
+| pad, combo at 5400 | — | BIOS menu |
+
+**Not checked:** X in menus; the negative-logic path (never taken by this game; the
+identities above are exhaustive-tested in Python only); real hardware.

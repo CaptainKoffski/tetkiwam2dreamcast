@@ -8,7 +8,7 @@ disc images. Bring your own dump. Working notes live in `docs/kb/`;
 > **This is a conversion, not a port.** The arcade disc already ships a complete
 > Dreamcast build of the game: Success left a DC executable and filesystem inside
 > the encrypted Naomi image. No game code is recompiled here, and the code patches
-> on the GDI are small: one byte switches on the game's own free-play mode, one byte makes its disc reads hand over a normal buffer address so DreamShell's ISO Loader can serve them from an SD card, and a 102-byte block in Sega's pad library makes an arcade stick's C button a second HOLD and adds a soft reset, A+B+X+Y+Start (the CD-R build adds three more so it runs from a CD). The work is extracting that build and laying it out on a disc the real
+> on the GDI are small: one byte switches on the game's own free-play mode, one byte makes its disc reads hand over a normal buffer address so DreamShell's ISO Loader can serve them from an SD card, and a 102-byte block in Sega's pad library makes X (and an arcade stick's C) HOLD too and adds a soft reset, A+B+X+Y+Start (the CD-R build adds three more so it runs from a CD). The work is extracting that build and laying it out on a disc the real
 > Dreamcast BIOS will boot. As far as we know, this is the first time it has
 > been confirmed booting on real hardware (GDEMU, 2026-10-03).
 
@@ -196,6 +196,16 @@ the same result in fewer instructions to make room (102 bytes in all,
 On real hardware it "works properly" on GDEMU and from DreamShell's ISO Loader
 (user report, 2026-10-23, 0.8.0). Details: `docs/kb/controls.md` §Soft reset.
 
+Always on: HOLD on X, for the usual three-button layout (A/B rotate, X holds; a
+tester's request). The same pd block sets Y's bit while X or C is held
+(`on |= ((on >> 10 | on) & 1) << 9`); X did nothing before. Y and R still hold.
+The room (6 bytes) comes from deriving press/release straight from `on` and the
+previous `on` (`on & ~prev`, `off & prev`) instead of through the changed bits.
+Checked in the Flycast fork, real BIOS (2026-10-24): on the pad, X gives the same 33
+frames as Y, on the GDI and the CDI; R still = Y; on 0.8.0, X = no press; no-press
+is pixel-identical to 0.8.0; stick C = Y; the combo still exits to the BIOS menu.
+Not yet on real hardware. Details: `docs/kb/controls.md` §HOLD on X.
+
 Reference SHA1s of a verified build:
 
 | file | sha1 |
@@ -206,7 +216,8 @@ Reference SHA1s of a verified build:
 | track03.iso | `82f8925aa94dd2ac266acf5cfae37dfb5ec71444` |
 | track03.iso with `iplogo.mr` | `58870f766fa136f5a8fb760dad3cfd23b1bc9bed` |
 | track03.iso with `iplogo.mr` + `0GDTEX.PVR` (0.3.0) | `05ab2d08d33d637e8f73f971d8387af6321fe274` |
-| track04.iso (free play + P1 DMA buffers + HOLD on C + soft reset) | `f0898932d8bcc3a2aa0658b3ee78c218d53bd3ae` |
+| track04.iso (free play + P1 DMA buffers + HOLD on X/C + soft reset) | `2cd9232b9c6c50a9a31ce9cf4a36c622e90f1376` |
+| track04.iso (free play + P1 DMA buffers + HOLD on C + soft reset, 0.8.0) | `f0898932d8bcc3a2aa0658b3ee78c218d53bd3ae` |
 | track04.iso (free play + P1 DMA buffers + HOLD on C, 0.7.0) | `46041d6cd9dddfed491f274510bd9bf05b9165cc` |
 | track04.iso (free play + P1 DMA buffers, 0.6.0) | `27bc2a196964a9f131dec3229099f14118ee7e4e` |
 | track04.iso (free play, 0.4.0–0.5.0) | `2718605b6947bad281ea81283212cccb1f29d534` |
@@ -219,8 +230,9 @@ Before the title patch (up to tag 0.2.0) the three track03 rows were
 
 - Free play: no coins needed, Start starts. (Before free play, Y inserted a coin.)
 - Controls: lever/D-pad moves, up is hard drop; A and B rotate (opposite ways);
-  Y, C or R is HOLD (C since the HOLD-on-C patch, for arcade sticks). X, L and Z do
-  nothing. On a DC arcade stick: A/B rotate, Y or C holds (Flycast; `docs/kb/controls.md`).
+  X, Y or R is HOLD (X since the HOLD-on-X patch, for the A/B/X layout), and C on an
+  arcade stick. L and Z do nothing. On a DC arcade stick: A/B rotate, X, Y or C holds
+  (Flycast; `docs/kb/controls.md`).
 - Soft reset: hold A+B+X+Y+Start to exit to the Dreamcast BIOS menu (under DreamShell's
   ISO Loader, DreamShell reloads instead). Works on GDEMU and DreamShell (user report, 2026-10-23).
 - GDEMU/ODE: copy `build/gdi/` to the SD card. Run `dot_clean` on it first, since
@@ -268,4 +280,5 @@ distributed. Tetris Kiwamemichi belongs to its rights holders.
 | Arcade stick (no stuck input; every action reachable) | ✅ Flycast Arcade Stick, pad-identical shots and per-button map, 2026-10-10 (`docs/kb/controls.md`); ⬜ real stick on hardware |
 | HOLD on C (58-byte pd library patch) | ✅ Flycast Arcade Stick: C = Y on all 30 shots, GDI and CDI; pad legs unchanged, 2026-10-11; ✅ GDEMU with standard DC controllers, no regression — user report, 2026-10-11, 0.7.0; ⬜ real arcade stick (testers) |
 | Soft reset, A+B+X+Y+Start → BIOS menu (102-byte pd patch) | ✅ Flycast fork, real BIOS: pad and Arcade Stick, match and title, GDI and CDI, strict cache/MMU build; near misses don't reset; no-press and C = Y legs identical to 0.7.0, 2026-10-15..22; ✅ GDEMU and ✅ DreamShell ISO Loader (back to DreamShell), "works properly" — user report, 2026-10-23, 0.8.0 |
+| HOLD on X (same pd block; press/release rederived for room) | ✅ Flycast fork, real BIOS, pad: X = Y 33/33, GDI and CDI; R = Y; no-press identical to 0.8.0; stick C = Y; combo → BIOS menu, 2026-10-24; ⬜ hardware |
 | Video output on hardware | ✅ VGA — the DreamShell rig (`docs/kb/dreamshell.md`); ✅ composite, runs without issues as on VGA — user report, 2026-10-10 |
