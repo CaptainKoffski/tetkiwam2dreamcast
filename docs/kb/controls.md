@@ -266,4 +266,7 @@ headless):**
 | pad, combo at 5400 | — | BIOS menu |
 
 **Not checked:** X in menus; the negative-logic path (never taken by this game; the
-identities above are exhaustive-tested in Python only); real hardware.
+identities above are random-tested in Python only).
+
+**Hardware (2026-10-24):** tested on real hardware, GDEMU (user report).
+Release 0.9.0.

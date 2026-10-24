@@ -208,7 +208,8 @@ previous `on` (`on & ~prev`, `off & prev`) instead of through the changed bits.
 Checked in the Flycast fork, real BIOS (2026-10-24): on the pad, X gives the same 33
 frames as Y, on the GDI and the CDI; R still = Y; on 0.8.0, X = no press; no-press
 is pixel-identical to 0.8.0; stick C = Y; the combo still exits to the BIOS menu.
-Not yet on real hardware. Details: `docs/kb/controls.md` §HOLD on X.
+Tested on real hardware (GDEMU; user report, 2026-10-24, 0.9.0). Details:
+`docs/kb/controls.md` §HOLD on X.
 
 Reference SHA1s of a verified build:
 
@@ -284,5 +285,5 @@ distributed. Tetris Kiwamemichi belongs to its rights holders.
 | Arcade stick (no stuck input; every action reachable) | ✅ Flycast Arcade Stick, pad-identical shots and per-button map, 2026-10-10 (`docs/kb/controls.md`); ⬜ real stick on hardware |
 | HOLD on C (58-byte pd library patch) | ✅ Flycast Arcade Stick: C = Y on all 30 shots, GDI and CDI; pad legs unchanged, 2026-10-11; ✅ GDEMU with standard DC controllers, no regression — user report, 2026-10-11, 0.7.0; ⬜ real arcade stick (testers) |
 | Soft reset, A+B+X+Y+Start → BIOS menu (102-byte pd patch) | ✅ Flycast fork, real BIOS: pad and Arcade Stick, match and title, GDI and CDI, strict cache/MMU build; near misses don't reset; no-press and C = Y legs identical to 0.7.0, 2026-10-15..22; ✅ GDEMU and ✅ DreamShell ISO Loader (back to DreamShell), "works properly" — user report, 2026-10-23, 0.8.0 |
-| HOLD on X (same pd block; press/release rederived for room) | ✅ Flycast fork, real BIOS, pad: X = Y 33/33, GDI and CDI; R = Y; no-press identical to 0.8.0; stick C = Y; combo → BIOS menu, 2026-10-24; ⬜ hardware |
+| HOLD on X (same pd block; press/release rederived for room) | ✅ Flycast fork, real BIOS, pad: X = Y 33/33, GDI and CDI; R = Y; no-press identical to 0.8.0; stick C = Y; combo → BIOS menu, 2026-10-24; ✅ real hardware (GDEMU) — user report, 2026-10-24, 0.9.0 |
 | Video output on hardware | ✅ VGA — the DreamShell rig (`docs/kb/dreamshell.md`); ✅ composite, runs without issues as on VGA — user report, 2026-10-10 |
