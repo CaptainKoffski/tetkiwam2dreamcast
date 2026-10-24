@@ -42,7 +42,11 @@ python3 build_gdi.py            # -> build/gdi/tetris.gdi + track01..04
 
 Or `make` (same build), `make verify` (checks the reference SHA1s below),
 `make cdi` (CD-R image, see below), `make release` (`[GDI]` and `[CDI]` zips,
-local only, never upload), `make deploy CARD=/Volumes/GDEMU/NN`.
+local only, never upload), `make deploy` (both images onto the inserted GDEMU
+card: finds or creates the `[GDI]`/`[CDI]` folders by `name.txt`, rewrites the
+GDMenu list in `01/` as Katana does, ejects; `CARD=`/`NOEJECT=1` optional).
+`python3 test_gdemu_deploy.py` self-checks it on a fake card (needs `mkisofs`
+and `isoinfo`: `brew install cdrtools`, 3.02a09 used).
 
 It reads `tetkiwam.zip` (PIC) and `tetkiwam/gdl-0020.chd` from
 `../naomi2dreamcast/naomi`. Set `NAOMI_DIR=` to point it somewhere else.

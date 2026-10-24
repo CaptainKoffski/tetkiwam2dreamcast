@@ -17,8 +17,11 @@
 #                  (tetris.cdi in the same folder + burn README at the root).
 #                  BOTH CONTAIN THE COMMERCIAL GAME -- local use only, never
 #                  upload/commit (build/ is gitignored for this reason).
-#   make deploy CARD=/Volumes/GDEMU/NN = copy the five disc files to a GDEMU
-#                  card entry + dot_clean + eject (NOEJECT=1 to stage more)
+#   make deploy  = gdi + cdi onto the inserted GDEMU card (gdemu_deploy.py):
+#                  updates the "Tetris Kiwamemichi [GDI]"/"[CDI]" folders or
+#                  creates them, rewrites the GDMenu list, dot_clean, eject.
+#                  CARD=/Volumes/X if several cards are mounted, NOEJECT=1 to
+#                  stage more. `python3 test_gdemu_deploy.py` self-checks it.
 #   make clean   = rm build/gdi, build/cdi, the release zips, build/extract_dat
 #
 # Requires: chdman, clang++, python3; cdi/release also mkdcdisc (README §Build).
@@ -29,7 +32,6 @@ DISC_FILES = $(OUT)/tetris.gdi $(OUT)/track01.bin $(OUT)/track02.raw \
 GAMEDIR = Tetris Kiwamemichi
 ZIP = build/[GDI] $(GAMEDIR).zip
 CDI_ZIP = build/[CDI] $(GAMEDIR).zip
-CARD ?= /Volumes/GDEMU/03
 
 .PHONY: gdi disc cdi verify release deploy clean
 
@@ -61,18 +63,8 @@ release: gdi cdi
 	cd build/cdi-zip && zip -r "../../$(CDI_ZIP)" .
 	@echo "NOTE: both archives embed the commercial game -- do not upload."
 
-# Sibling's deploy recipe (../senkosp2dreamcast/Makefile, from ../cleopatra):
-# copy, dot_clean, then fail loudly if any ._* AppleDouble sidecar survived --
-# GDEMU reads the junk `.gdi` first. No default CARD: the sibling ports own
-# other slots on the same card.
-deploy: gdi
-	test -n "$(CARD)" || { echo "usage: make deploy CARD=/Volumes/GDEMU/NN"; exit 1; }
-	test -d "$(CARD)"   # card entry mounted?
-	cp $(DISC_FILES) "$(CARD)/"
-	dot_clean -m "$(CARD)"
-	@ls -a "$(CARD)" | grep '^\._' && { echo "AppleDouble junk survived!"; exit 1; } || true
-	$(if $(NOEJECT),@echo "deployed to $(CARD) -- NOT ejected",\
-	  diskutil eject "$$(df '$(CARD)' | tail -1 | awk '{print $$NF}')")
+deploy: gdi cdi
+	CARD="$(CARD)" NOEJECT="$(NOEJECT)" python3 gdemu_deploy.py "$(GAMEDIR)" $(OUT)/tetris.gdi build/cdi/tetris.cdi
 
 clean:
 	rm -rf $(OUT) build/cdi build/release build/cdi-zip "$(ZIP)" "$(CDI_ZIP)" build/extract_dat
