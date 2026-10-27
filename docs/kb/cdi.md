@@ -291,3 +291,66 @@ contents are byte-identical.
 
 **Owed:** a real CD-R burn on a MIL-CD-capable console (GDEMU emulates the
 drive, not the laser).
+
+## DreamShell ISO Loader: unscrambled boot file + IP.BIN rescramble (2026-10-28)
+
+**Report (tester, via user, 0.9.0):** the CDI on DreamShell's SD card, ISO Loader
+defaults: hangs on ISO Loader's "Executing..." screen. The GDI works there
+(`dreamshell.md`).
+
+**Root cause: the CDI's `1ST_READ.BIN` is scrambled, and isoldr runs it as is.**
+- `make_cdi.py` passed `-b`, so mkdcdisc stored the boot file scrambled, as a CD
+  boot expects (the boot ROM unscrambles it while loading).
+- isoldr unscrambles only `BIN_TYPE_KOS` (`firmware/isoldr/loader/utils.c:107`).
+  Auto-detect calls a file KOS only if it has a plain KOS header, and everything
+  else Katana: `modules/isoldr/module.c:79-86` ("TODO: Check for scrambled
+  homebrew") and `:117-121` (DreamShell 4.0.4 source).
+- The default boot mode is direct (`modules/isoldr/preset.c:283`), so isoldr prints
+  "Executing..." (`firmware/isoldr/loader/main.c:236`) and jumps into scrambled
+  bytes.
+- Scene binhack CDIs never hit this: they store the file plain, and `IP.HAK`
+  scrambles it back in RAM (§Existing tools, step 4).
+
+**Emulator legs** (Flycast fork normal build, DreamShell 4.0.4 `EMU_DS_CORE.BIN`,
+emulated SD, `isoldr -i -f /cd/TETRIS/tetris.cdi -d sd` with no `-P`, which is the GUI's
+`isoldr_apply_preset(info, NULL)` defaults; game CDIs mastered `-N` to fit on the
+rig disc; recipe `tooling.md` §DreamShell):
+
+| leg | game CDI | result |
+|---|---|---|
+| `ds-stock` | 0.9.0 `make_cdi.py` (scrambled) | **"Executing..." and no further frames**: the tester's symptom |
+| `ds-plain` | same, `-B` (stored plain) | plays: attract, FREE PLAY |
+| `cd-plain` | `-B`, no hook, real BIOS CD boot | 5 reads, then nothing: the BIOS unscrambles a plain file into garbage (4/4 attempts) |
+
+**Fix (`make_cdi.py` + `tools/ip_rescramble.s`, CDI only):**
+- The boot file is stored plain (`-B`).
+- mkdcdisc's CD bootstrap enters the game with `jsr @r0` through the pointer word at
+  `0x8c00e0ac` (IP.BIN `0x60ac`, `= 0x8c010000`). It now points at a 264-byte hook at
+  `0x8c00e200` (IP.BIN `0x6200`, in a zero run to `0x8000`; asserted).
+- The hook runs the KOS scramble over the loaded file (Marcus Comstedt's
+  `scramble.c`, public domain; mkdcdisc `src/third_party/scramble`), seeded with the
+  file size like the BIOS's unscramble. Buffers: one chunk at `0x8c800000`, the u16
+  index table at `0x8ca00000`.
+- Then it enters the game with the bootstrap's own registers: r0 = r4 =
+  `0x8c010000`; r1–r3 and r5–r14 zero; pr, r15, sr, vbr and fpscr unchanged.
+- If the first 16 bytes are already plain (isoldr's "boot from IP.BIN" mode loads
+  the file itself), it leaves the file alone. `make_cdi.py` asserts that a CD boot
+  never leaves them plain.
+- Two mkdcdisc passes. The first (`-N -I`) only yields the data track, whose first
+  32 KB is the IP.BIN mkdcdisc fills in from our fields + `iplogo.mr`. That IP.BIN,
+  hooked, masters the disc with `-p`, which takes it as is.
+- Offline checks (session scratchpad):
+  - The bytes embedded in `make_cdi.py` equal `sh-elf-as` output.
+  - `make_cdi.py`'s Python `unscramble` inverts mkdcdisc's real scramble on a random
+    1,007,652-byte file (non-32 tail).
+  - `make verify`: GDI unchanged.
+
+| leg | build | result |
+|---|---|---|
+| `cd-new` | release CDI, real BIOS CD boot | attract, FREE PLAY; 457 reads, all `expdtype=4` |
+| `ds-new` | the same `-N`, DreamShell defaults | attract, FREE PLAY |
+| `strict-ds-new` | the same, strict cache/MMU build | title, FREE PLAY; game MMU on under isoldr (`MMUCR=00040005`, `vecbc=8c009d6e`, as `dreamshell.md` `strict_fin`); 0 exceptions |
+| `strict-cd-new` | release CDI, strict build, real BIOS CD boot | attract, FREE PLAY; 33 reads, all `expdtype=4` (round 5 E: 33); 0 exceptions |
+
+**Hardware owed:** GDEMU (CD boot path: the hook), and DreamShell ISO Loader from
+SD with defaults (the tester's rig). Then a burned CD-R, still owed from 0.5.0.

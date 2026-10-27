@@ -3,10 +3,13 @@
 
 Reads build_gdi.py's output, so the cover art, title and free-play byte carry
 over: track03's ISO9660 tree is unpacked file by file, 1ST_READ.BIN comes from
-track04, and mkdcdisc masters a fresh CD: its own CD-native IP.BIN (branded
-from the GD IP's fields + iplogo.mr) and the scramble the boot ROM undoes on
-CD media. senkosp2dreamcast tooling.md §CDI mastering proved both on GDEMU:
-a retail GD IP.BIN dies on a real CD boot, mkdcdisc's boots.
+track04, and mkdcdisc masters a fresh CD with its own CD-native IP.BIN (branded
+from the GD IP's fields + iplogo.mr). senkosp2dreamcast tooling.md §CDI mastering
+proved it on GDEMU: a retail GD IP.BIN dies on a real CD boot, mkdcdisc's boots.
+1ST_READ.BIN goes on the disc unscrambled, as in a scene binhack CDI, so
+DreamShell's ISO Loader can run it from an SD card. That IP.BIN's bootstrap is
+hooked to scramble it back in RAM after a CD boot has unscrambled it
+(tools/ip_rescramble.s).
 
 Three code changes on top of the GDI, all because Katana assumes a GD-ROM boot:
 the selfboot "LBA hack" (LBA_SITES), the GDFS disc-type check (CHECK, which
@@ -31,6 +34,34 @@ MKDCDISC = os.environ.get("MKDCDISC", os.path.join(HERE, "../senkosp2dreamcast/t
 LBA_SITES = {0xc34: 45150, 0x12e8: 45150, 0x16b4: 45150, 0xc5b10: 45166}
 
 assert os.access(MKDCDISC, os.X_OK), f"mkdcdisc missing at {MKDCDISC} (MKDCDISC= to override): docs/kb/tooling.md §CDI"
+
+def unscramble(data):
+    """What a CD boot does to the boot file as it loads it: Marcus Comstedt's scramble.c
+    (public domain), mkdcdisc src/third_party/scramble unscramble(). 32-byte slices are
+    shuffled within power-of-two chunks from 2 MB down; a tail under 32 bytes stays."""
+    out, seed, pos, left, chunk = bytearray(data), len(data) & 0xffff, 0, len(data), 0x200000
+    while chunk >= 32:
+        while left >= chunk:
+            n = chunk // 32
+            idx = list(range(n))
+            for k, i in enumerate(range(n - 1, -1, -1)):
+                seed = (seed * 2109 + 9273) & 0x7fff
+                x = (((seed + 0xc000) & 0xffff) * i) >> 16
+                idx[i], idx[x] = idx[x], idx[i]
+                out[pos + 32 * idx[i]:pos + 32 * idx[i] + 32] = data[pos + 32 * k:pos + 32 * k + 32]
+            pos, left = pos + chunk, left - chunk
+        chunk >>= 1
+    return bytes(out)
+
+# tools/ip_rescramble.s, assembled (the recipe is in its header). It sits at IP.BIN 0x6200
+# (0x8c00e200): size word, the plain first 16 bytes, then the code at +0x20.
+IP_HOOK, IP_HOOK_AT, IP_GAME_PTR = bytes.fromhex(
+    "00000000000000000000000000000000000000000000000000000000000000002a0831d431d0436104e20663"
+    "16653035038b1042f98b46a009002dd002655d662cd772353b8b73690949094901492adb00eab36da12d017a"
+    "923afb8f027d27dc936aff7a4c9007061a064a900c364990092648906c300d6da70d1a0d294ddc3dbc3da361"
+    "1c31bc31d1621163312d21212d620842084200424c3208e32660022c1043fb8f047ca82adb8b14dc73630943"
+    "c66002241043fb8f0474c2af7835014720e00237bd892a4800e11362136313651366136713681369136a136b"
+    "136c136d136e01d02b4003640000018c04e2008c00e2008c000020000000a08c0000808c3d083924ff7f00c0"), 0x6200, 0x60ac
 iso = open(os.path.join(GDI, "track03.iso"), "rb").read()
 sec = lambda lba: (lba - 45000) * 2048
 work = tempfile.mkdtemp()
@@ -109,19 +140,34 @@ boot += struct.pack("<12H4I", 0xd105, 0xd006, 0x2102,      # *(u32 *)0xa05f74e4 
                     0xd004, 0x402b, 9,                       # jmp crt0 (past the hook)
                     0xa05f74e4, 0x1fffff, 0xa0000000, 0x8c01000c)
 open(os.path.join(work, "1ST_READ.BIN"), "wb").write(boot)
+# The hook skips the rescramble when the first 16 bytes are already plain, so a CD boot
+# must never leave them plain.
+assert unscramble(bytes(boot))[:16] != boot[:16], "a CD boot would leave 1ST_READ.BIN's head plain"
 
 # IP.BIN fields mirrored from the GD IP (makeip src/field.c offsets). Area stays
-# mkdcdisc's JUE, as in the sibling.
+# mkdcdisc's JUE, as in the sibling. Two passes: the first (-N -I, only to get the data
+# track) has mkdcdisc fill in its IP.BIN; that IP.BIN, hooked, masters the disc (-p takes
+# it as is). -B: 1ST_READ.BIN goes on the disc unscrambled (module docstring).
 f = lambda a, b: iso[a:b].decode().strip()
-cmd = [MKDCDISC, "-q", "--allow-overwrite", "-b", os.path.join(work, "1ST_READ.BIN"),
-       "-D", os.path.join(work, "root"), "-o", os.path.join(OUT, "tetris.cdi"),
-       "-n", f(0x80, 0x100), "-a", f(0x70, 0x80), "-s", f(0x40, 0x4a),
-       "-P", f(0x4a, 0x50), "-r", f(0x50, 0x58), "-H", f(0x38, 0x3f)]
+base = [MKDCDISC, "-q", "--allow-overwrite", "-B", os.path.join(work, "1ST_READ.BIN"),
+        "-D", os.path.join(work, "root")]
+fields = ["-n", f(0x80, 0x100), "-a", f(0x70, 0x80), "-s", f(0x40, 0x4a),
+          "-P", f(0x4a, 0x50), "-r", f(0x50, 0x58), "-H", f(0x38, 0x3f)]
 MR = os.path.join(HERE, "iplogo.mr")
-cmd += ["-i", MR] if os.path.exists(MR) else []
+fields += ["-i", MR] if os.path.exists(MR) else []
 print("iplogo.mr: TM screen logo inserted" if os.path.exists(MR) else "note: no iplogo.mr -> mkdcdisc's stock license screen")
+subprocess.run(base + fields + ["-N", "-I", "-o", os.path.join(work, "ip.cdi")], check=True)
+ip = bytearray(open(os.path.join(work, "ip.iso"), "rb").read()[:0x8000])
+assert ip[:16] == b"SEGA SEGAKATANA " and ip[IP_GAME_PTR:IP_GAME_PTR + 4] == struct.pack("<I", 0x8c010000), \
+    "unexpected mkdcdisc bootstrap (game entry pointer)"
+assert not any(ip[IP_HOOK_AT:]), "IP.BIN 0x6200.. is not free"
+hook = bytearray(IP_HOOK)
+struct.pack_into("<I16s", hook, 0, len(boot), bytes(boot[:16]))
+ip[IP_HOOK_AT:IP_HOOK_AT + len(hook)] = hook
+struct.pack_into("<I", ip, IP_GAME_PTR, 0x8c008000 + IP_HOOK_AT + 0x20)
+open(os.path.join(work, "IP.BIN"), "wb").write(ip)
 os.makedirs(OUT, exist_ok=True)
-subprocess.run(cmd, check=True)
+subprocess.run(base + ["-p", os.path.join(work, "IP.BIN"), "-o", os.path.join(OUT, "tetris.cdi")], check=True)
 open(os.path.join(OUT, "README.txt"), "w").write("""\
 TETRIS KIWAMEMICHI -- Dreamcast conversion, CD-R (CDI) build
 =============================================================

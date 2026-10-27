@@ -90,8 +90,15 @@ for burning, plus burn notes in `README.txt`. It needs
 isn't at `../senkosp2dreamcast/tools/mkdcdisc/build/mkdcdisc`). `make_cdi.py`
 takes the files from the built GDI, so the art, title and free play carry over.
 mkdcdisc writes its own CD IP.BIN (with this disc's title and fields, and
-`iplogo.mr` if present) and scrambles the boot file. senkosp2dreamcast found
-on hardware that a retail GD IP.BIN won't boot from CD. The CD copy of
+`iplogo.mr` if present). senkosp2dreamcast found
+on hardware that a retail GD IP.BIN won't boot from CD. The boot file goes on
+the disc unscrambled, as in a scene binhack CDI, so DreamShell's ISO Loader can
+run the CDI from an SD card with its default settings. ISO Loader unscrambles
+only KallistiOS binaries and runs anything else as is
+(`firmware/isoldr/loader/utils.c:107`), so a scrambled one hung at
+"Executing..." (tester report, 0.9.0). A CD boot unscrambles the file as it
+loads it, so a 264-byte hook in the IP.BIN bootstrap (`tools/ip_rescramble.s`,
+at `0x8c00e200`) scrambles it back in RAM before entering the game. The CD copy of
 `1ST_READ.BIN` gets three more patches, since the game (Katana) assumes it
 booted from a GD-ROM. Its four hardcoded GD sector addresses (45150
 ×3, 45166) move to the CD data track (−33298, the old selfboot "binhack"). Its
@@ -277,6 +284,7 @@ distributed. Tetris Kiwamemichi belongs to its rights holders.
 | Flycast, real BIOS → title + attract | ✅ 2026-10-03 |
 | Real DC hardware (GDEMU) | ✅ works — user report, 2026-10-03 |
 | CDI (burned disc, `make cdi`) | ✅ Flycast + real BIOS → in-game, 2026-10-05; ✅ GDEMU round 5 (G1 bus unlock), boots and plays — user report, 2026-10-07, 0.5.0 (rounds 1–4 black: `docs/kb/cdi.md`); ⬜ CD-R |
+| CDI from DreamShell ISO Loader, SD, defaults (plain boot file + IP.BIN rescramble) | ❌ 0.9.0 hangs at "Executing..." — tester report, reproduced in the Flycast fork 2026-10-28; ✅ Flycast fork (normal + strict cache/MMU): DreamShell defaults → title/attract, real-BIOS CD boot → attract, 0 exceptions, 2026-10-28; ⬜ GDEMU and DreamShell on hardware |
 | SEGA TM-screen logo (`iplogo.mr`) | ✅ Flycast + real BIOS; ✅ GDEMU — user report, 2026-10-04 |
 | Disc art in BIOS / GDEMU menu (`0GDTEX.PVR`) | ✅ offline byte checks; ✅ GDEMU — user report, 2026-10-04 |
 | Game title in IP.BIN (`TETRIS KIWAMEMICHI`) | ✅ offline byte diff + Flycast real-BIOS boot; ✅ GDEMU — user report, 2026-10-04 |
