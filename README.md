@@ -284,7 +284,7 @@ distributed. Tetris Kiwamemichi belongs to its rights holders.
 | Flycast, real BIOS → title + attract | ✅ 2026-10-03 |
 | Real DC hardware (GDEMU) | ✅ works — user report, 2026-10-03 |
 | CDI (burned disc, `make cdi`) | ✅ Flycast + real BIOS → in-game, 2026-10-05; ✅ GDEMU round 5 (G1 bus unlock), boots and plays — user report, 2026-10-07, 0.5.0 (rounds 1–4 black: `docs/kb/cdi.md`); ⬜ CD-R |
-| CDI from DreamShell ISO Loader, SD, defaults (plain boot file + IP.BIN rescramble) | ❌ 0.9.0 hangs at "Executing..." — tester report, reproduced in the Flycast fork 2026-10-28; ✅ Flycast fork (normal + strict cache/MMU): DreamShell defaults → title/attract, real-BIOS CD boot → attract, 0 exceptions, 2026-10-28; ⬜ GDEMU and DreamShell on hardware |
+| CDI from DreamShell ISO Loader, SD, defaults (plain boot file + IP.BIN rescramble) | ❌ 0.9.0 hangs at "Executing..." — tester report, reproduced in the Flycast fork 2026-10-28; ✅ Flycast fork (normal + strict cache/MMU): DreamShell defaults → title/attract, real-BIOS CD boot → attract, 0 exceptions, 2026-10-28; ✅ GDEMU, no regression, and ✅ DreamShell ISO Loader from SD on the serial port, defaults, "the bug is gone" — user report, 2026-11-01 |
 | SEGA TM-screen logo (`iplogo.mr`) | ✅ Flycast + real BIOS; ✅ GDEMU — user report, 2026-10-04 |
 | Disc art in BIOS / GDEMU menu (`0GDTEX.PVR`) | ✅ offline byte checks; ✅ GDEMU — user report, 2026-10-04 |
 | Game title in IP.BIN (`TETRIS KIWAMEMICHI`) | ✅ offline byte diff + Flycast real-BIOS boot; ✅ GDEMU — user report, 2026-10-04 |

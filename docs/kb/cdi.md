@@ -352,5 +352,7 @@ rig disc; recipe `tooling.md` §DreamShell):
 | `strict-ds-new` | the same, strict cache/MMU build | title, FREE PLAY; game MMU on under isoldr (`MMUCR=00040005`, `vecbc=8c009d6e`, as `dreamshell.md` `strict_fin`); 0 exceptions |
 | `strict-cd-new` | release CDI, strict build, real BIOS CD boot | attract, FREE PLAY; 33 reads, all `expdtype=4` (round 5 E: 33); 0 exceptions |
 
-**Hardware owed:** GDEMU (CD boot path: the hook), and DreamShell ISO Loader from
-SD with defaults (the tester's rig). Then a burned CD-R, still owed from 0.5.0.
+**Hardware (2026-11-01, user report): PASS.** GDEMU (CD boot path, so the hook
+runs): "works fine, no regression". DreamShell ISO Loader from SD on the serial
+port, default settings: "works fine, the bug is gone". A burned CD-R is still owed
+from 0.5.0.
